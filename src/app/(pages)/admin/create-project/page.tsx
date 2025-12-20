@@ -96,58 +96,48 @@ export default function CreateProjectPage() {
 
   // --- SUBMIT ---
   const handleSubmit = async () => {
-    // 1. ตรวจสอบข้อมูลก่อน
     if (!title || !startDate || !closeDate) {
         alert("กรุณากรอกข้อมูลสำคัญให้ครบ (ชื่อ, วันที่)");
         return;
     }
-    
     setLoading(true);
 
     try {
-      // --- 2. อัปโหลดรูปปก (Cover) แบบปลอดภัย ---
+      // 1. Upload Cover
       let coverUrl = "";
       if (coverFile) {
-        // ดึงนามสกุลไฟล์ (ถ้าไม่มีให้ตั้งเป็น .jpg)
         const ext = coverFile.name.split('.').pop()?.toLowerCase() || 'jpg';
-        // ตั้งชื่อไฟล์ใหม่: cover_เวลาปัจจุบัน.นามสกุล (เลี่ยงภาษาไทย)
         const newFileName = `cover_${Date.now()}.${ext}`;
-        
         const storageRef = ref(storage, `projects/covers/${newFileName}`);
-        
-        // 📌 จุดสำคัญ: ระบุ Content-Type ให้ชัดเจน
-        const metadata = {
-            contentType: coverFile.type || 'image/jpeg' 
-        };
-        
+        const metadata = { contentType: coverFile.type || 'image/jpeg' };
         const snap = await uploadBytes(storageRef, coverFile, metadata);
         coverUrl = await getDownloadURL(snap.ref);
       }
 
-      // --- 3. อัปโหลดเอกสาร Template (ถ้ามี) ---
+      // 2. Upload Templates (แก้ตรงนี้!)
       const finalDocuments = await Promise.all(documents.map(async (doc) => {
-        let templateUrl = "";
+        let templateUrl = null; // ✅ ตั้งค่าเริ่มต้นเป็น null (อย่าใช้ undefined)
+        
         if (doc.file) {
           const ext = doc.file.name.split('.').pop()?.toLowerCase() || 'dat';
-          // ตั้งชื่อไฟล์สุ่มตัวเลขกันซ้ำ
           const newFileName = `doc_${Date.now()}_${Math.floor(Math.random() * 1000)}.${ext}`;
-          
           const storageRef = ref(storage, `projects/templates/${newFileName}`);
-          
-          // ระบุ metadata ด้วยเหมือนกัน
           const metadata = { contentType: doc.file.type };
-
           const snap = await uploadBytes(storageRef, doc.file, metadata);
           templateUrl = await getDownloadURL(snap.ref);
         }
-        return { name: doc.name, templateUrl: templateUrl || undefined };
+        
+        return { 
+          name: doc.name, 
+          templateUrl: templateUrl // ✅ ส่งค่า null ถ้าไม่มีไฟล์ (Firestore รับได้)
+        };
       }));
 
-      // --- 4. บันทึกลง Firestore ---
+      // 3. Save to Firestore
       await addDoc(collection(db, "projects"), {
         title,
-        displayLocation, // อย่าลืม field นี้ที่เพิ่มมาใหม่
-        description,
+        displayLocation: displayLocation || "", // ✅ กันไว้เผื่อเป็น undefined ให้ใส่ string ว่างแทน
+        description: description || "",
         coverImage: coverUrl,
         status: "open",
         startDate: Timestamp.fromDate(new Date(startDate)),
@@ -157,32 +147,24 @@ export default function CreateProjectPage() {
         locations: locations.filter(l => l.trim() !== ""),
         
         recruitmentType,
-        capacity: parseInt(capacity),
-        qualifications,
+        capacity: parseInt(capacity) || 0, // ✅ กันพลาดแปลงเลขไม่ได้
+        qualifications: qualifications || [],
         documents: finalDocuments,
 
         costs: {
-          amount: parseInt(costAmount),
-          included: costIncluded,
-          excluded: costExcluded
+          amount: parseInt(costAmount) || 0,
+          included: costIncluded || [],
+          excluded: costExcluded || []
         },
         createdAt: Timestamp.now()
       });
 
-      // สำเร็จ -> กลับหน้าหลัก
       alert("สร้างโครงการสำเร็จ!");
       router.push("/admin/projects");
 
     } catch (err: any) {
       console.error("Error creating project:", err);
-      // แจ้งเตือน Error ภาษาไทย
-      if (err.code === 'storage/unauthorized') {
-          alert("ไม่ได้รับอนุญาตให้อัปโหลดไฟล์ (ตรวจสอบ Storage Rules)");
-      } else if (err.code === 'storage/retry-limit-exceeded') {
-          alert("การอัปโหลดล้มเหลว (อินเทอร์เน็ตอาจไม่เสถียร หรือไฟล์ใหญ่เกินไป)");
-      } else {
-          alert(`เกิดข้อผิดพลาด: ${err.message}`);
-      }
+      alert(`เกิดข้อผิดพลาด: ${err.message}`);
     } finally {
       setLoading(false);
     }
