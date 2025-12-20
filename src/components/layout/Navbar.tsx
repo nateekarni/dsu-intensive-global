@@ -10,7 +10,7 @@ export function Navbar() {
     <nav className="border-b bg-white hidden md:block">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="text-xl font-bold text-primary">
-          Exchange Program
+          DSU Intensive Global
         </Link>
 
         <div className="flex items-center gap-4">
@@ -22,7 +22,7 @@ export function Navbar() {
               <Button variant="outline" onClick={logout}>ออกจากระบบ</Button>
             </>
           ) : (
-            <Link href="/login">
+            <Link href="/auth/login">
               <Button>เข้าสู่ระบบ</Button>
             </Link>
           )}

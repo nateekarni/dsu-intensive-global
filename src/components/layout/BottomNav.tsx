@@ -11,6 +11,13 @@ export function BottomNav() {
 
   if (!user) return null; // ไม่ Login ไม่โชว์
 
+  if (
+    (pathname.includes("/student/projects/") && pathname !== "/student/projects") ||
+    pathname.includes("/admin/create-project")
+  ) {
+    return null; // ไม่แสดงเมนู
+  }
+
   // เมนูสำหรับนักเรียน
   const studentMenu = [
     { href: "/student/feed", label: "โครงการ", icon: LayoutGrid },

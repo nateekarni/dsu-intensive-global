@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { MapPin, Calendar, ArrowLeft } from "lucide-react";
 
-export default function ProjectDetailPage() {
+export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const { id } = useParams();
   const router = useRouter();
   const { user } = useAuth(); // ดึง User ปัจจุบัน
@@ -30,14 +30,7 @@ export default function ProjectDetailPage() {
   }, [id]);
 
   const handleApply = () => {
-    if (!user) {
-      // ถ้ายังไม่ Login ให้ไปหน้า Login
-      // (TODO: จริงๆ ต้องไปหน้าเลือกประเภทบัญชีตาม Flow ที่ออกแบบไว้ เดี๋ยวทำใน EP หน้า)
-      router.push("/login");
-    } else {
-      // Login แล้ว ไปหน้าสมัคร (EP.4)
-      router.push(`/student/apply/${id}`);
-    }
+    router.push(`/student/apply/${params.id}`);
   };
 
   if (loading) return <div>Loading...</div>;

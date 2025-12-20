@@ -29,7 +29,7 @@ export default function FeedPage() {
   return (
     <div className="container mx-auto p-4 max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">โครงการแลกเปลี่ยน</h1>
+        <h1 className="text-2xl font-bold text-slate-900">โครงการต่างประเทศ</h1>
         <p className="text-sm text-slate-500">โรงเรียนสาธิตมหาวิทยาลัยศิลปากร</p>
       </div>
 

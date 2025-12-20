@@ -44,24 +44,36 @@ export interface UserProfile {
 export interface Project {
   id: string;
   title: string;
+  description: string;
   coverImage: string;
   status: 'open' | 'closed' | 'draft';
   
+  // ช่วงเวลา
   startDate: Timestamp;
   endDate: Timestamp;
   closeDate: Timestamp;
-  capacity: number;
   
-  recruitmentType: 'selection' | 'fcfs'; // คัดเลือก หรือ มาก่อนได้ก่อน
-
-  description: string;
+  // สถานที่
   locations: string[];
   
+  // รูปแบบการรับสมัคร
+  recruitmentType: 'selection' | 'fcfs';
+  capacity: number;
+  qualifications: string[]; // ✅ เพิ่มตรงนี้ (คุณสมบัติผู้สมัคร)
+
+  // ค่าใช้จ่าย
   costs: {
+    amount: number;
     included: string[];
     excluded: string[];
-    amount: number;
   };
+
+  // เอกสาร
+  documents: {
+    id: string;
+    name: string;
+    templateUrl?: string;
+  }[];
 
   // การตั้งค่า Dynamic Form
   formConfig: {
@@ -73,12 +85,6 @@ export interface Project {
     }[];
     consents: string[];
   };
-
-  documents: {
-    id: string;
-    name: string;
-    templateUrl?: string;
-  }[];
 }
 
 // 3. ข้อมูลใบสมัคร
