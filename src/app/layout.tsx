@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { cn } from "@/lib/utils"; // (เดี๋ยวไฟล์นี้จะมาตอนลง shadcn)
+import { AuthProvider } from "@/contexts/AuthContext"; // Import
 
 export const metadata: Metadata = {
   title: "ระบบรับสมัครโครงการต่างประเทศ",
@@ -25,7 +26,9 @@ export default function RootLayout({
           "min-h-screen bg-background font-sans antialiased"
         )}
       >
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
