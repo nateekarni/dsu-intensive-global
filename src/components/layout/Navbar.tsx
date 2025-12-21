@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button"; // Shadcn Button
 
 export function Navbar() {
   const { user, logout } = useAuth();
+  
+  // กำหนด href ตาม role
+  const homeHref = user?.role === "admin" ? "/admin/projects" : "/student/feed";
 
   return (
     <nav className="border-b bg-white hidden md:block">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="text-xl font-bold text-primary">
+        <Link href={homeHref} className="text-xl font-bold text-primary">
           DSU Intensive Global
         </Link>
 

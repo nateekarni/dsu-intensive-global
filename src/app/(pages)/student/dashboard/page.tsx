@@ -41,7 +41,7 @@ export default function StudentDashboard() {
   if (loading) return <div className="p-8 text-center flex justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="container mx-auto px-4 py-6 max-w-4xl">
       <h1 className="text-2xl font-bold mb-6">สถานะการสมัครของฉัน</h1>
       
       <div className="space-y-4">

@@ -13,7 +13,8 @@ export function BottomNav() {
 
   if (
     (pathname.includes("/student/projects/") && pathname !== "/student/projects") ||
-    pathname.includes("/admin/create-project")
+    pathname.includes("/admin/create-project") ||
+    pathname.startsWith("/student/apply")
   ) {
     return null; // ไม่แสดงเมนู
   }

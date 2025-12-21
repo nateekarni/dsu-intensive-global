@@ -43,7 +43,7 @@ export default function ReviewPage() {
   if (!app) return <div>Loading...</div>;
 
   return (
-    <div className="container mx-auto p-4 h-[calc(100vh-80px)]">
+    <div className="px-6 py-6">
       <div className="flex justify-between items-center mb-4">
          <h1 className="text-2xl font-bold flex items-center gap-2">
             {app.personalData.nameThai} {app.personalData.surnameThai}
