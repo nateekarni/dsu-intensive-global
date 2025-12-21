@@ -7,12 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { 
-  MapPin, 
-  Calendar, 
-  ArrowLeft, 
-  Users, 
-  CheckCircle2, 
+import {
+  MapPin,
+  Calendar,
+  ArrowLeft,
+  Users,
+  CheckCircle2,
   XCircle,
   FileText,
   ClipboardList
@@ -95,10 +95,10 @@ export default function ProjectDetailPage() {
       {/* Hero Image */}
       <div className="rounded-xl overflow-hidden h-64 md:h-80 relative bg-slate-200 mb-6 shadow-lg">
         {project.coverImage && (
-          <img 
-            src={project.coverImage} 
+          <img
+            src={project.coverImage}
             alt={project.title}
-            className="w-full h-full object-cover" 
+            className="w-full h-full object-cover"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-end p-6">
@@ -183,7 +183,7 @@ export default function ProjectDetailPage() {
               ค่าเข้าร่วมโครงการ: ฿{project.costs.amount.toLocaleString()}
             </p>
           )}
-          
+
           {/* Included */}
           {project.costs?.included && project.costs.included.length > 0 && (
             <div className="mb-4">
@@ -252,8 +252,8 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Fixed Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 z-10">
-        <div className="container mx-auto max-w-4xl flex items-center justify-between gap-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-6 z-10">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs text-slate-500">ค่าเข้าร่วมโครงการ</p>
             <p className="text-2xl font-bold text-primary">
@@ -265,8 +265,8 @@ export default function ProjectDetailPage() {
               ปิดรับสมัคร: {formatThaiDate(project.closeDate)}
             </p>
           </div>
-          <Button 
-            onClick={handleApply} 
+          <Button
+            onClick={handleApply}
             className="px-6 h-10 text-base font-semibold bg-blue-600 hover:bg-blue-700 shadow-lg"
           >
             สมัคร

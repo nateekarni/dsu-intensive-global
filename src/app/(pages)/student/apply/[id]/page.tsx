@@ -4,7 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { db, auth } from "@/lib/firebase";
 import { doc, getDoc, addDoc, collection, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,10 +15,10 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { 
-  Loader2, 
-  CheckCircle, 
-  User, 
+import {
+  Loader2,
+  CheckCircle,
+  User,
   LogIn,
   ArrowRight,
   MapPin,
@@ -67,14 +67,14 @@ export default function ApplyPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { id } = useParams();
-  
+
   const [project, setProject] = useState<ProjectDoc | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  
+
   // Flow Control
   const [currentView, setCurrentView] = useState<'auth-select' | 'personal-form' | 'consent-form' | 'upload-docs'>('auth-select');
-  
+
   // Form Data
   const [personalInfo, setPersonalInfo] = useState<PersonalInfoForm>({
     prefixThai: '',
@@ -199,9 +199,9 @@ export default function ApplyPage() {
   };
 
   // Handle Personal Form Submit
-  const handlePersonalFormSubmit = (e: React.FormEvent) => {
+  const handlePersonalFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate required fields (manual because shadcn Select doesn't use native required)
     if (!personalInfo.prefixThai || !personalInfo.nameThai || !personalInfo.surnameThai) {
       alert('กรุณากรอกข้อมูลให้ครบถ้วน');
@@ -219,17 +219,94 @@ export default function ApplyPage() {
       alert('กรุณากรอกข้อมูลการศึกษาให้ครบถ้วน');
       return;
     }
-    
+
     // Move to consent form
-    setCurrentView('consent-form');
+    setSubmitting(true);
+
+    try {
+      // 1. Construct Email/Password
+      // Email: studentId@student.dsu.ac.th (Fake domain for login)
+      const loginEmail = `${personalInfo.studentId}@dsu.student`;
+
+      // Password: ddmmyy (BE)
+      // Assuming birthDate is Date object from Calendar
+      let birthDateObj: Date;
+      if ((personalInfo.birthDate as any) instanceof Date) {
+        birthDateObj = personalInfo.birthDate as any;
+      } else {
+        birthDateObj = new Date(personalInfo.birthDate);
+      }
+
+      const day = String(birthDateObj.getDate()).padStart(2, '0');
+      const month = String(birthDateObj.getMonth() + 1).padStart(2, '0');
+      const yearBE = String(birthDateObj.getFullYear() + 543).slice(-2);
+      const password = `${day}${month}${yearBE}`;
+
+      let userCredential;
+      try {
+        // Try to create user
+        userCredential = await createUserWithEmailAndPassword(auth, loginEmail, password);
+      } catch (error: any) {
+        if (error.code === 'auth/email-already-in-use') {
+          // Try to login
+          userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
+        } else {
+          throw error;
+        }
+      }
+
+      const user = userCredential.user;
+
+      // 2. Save User Data to 'users' collection
+      await setDoc(doc(db, 'users', user.uid), {
+        role: 'student',
+        email: personalInfo.email,
+        studentId: personalInfo.studentId,
+        prefixThai: personalInfo.prefixThai,
+        nameThai: personalInfo.nameThai,
+        surnameThai: personalInfo.surnameThai,
+        prefixEng: personalInfo.prefixEng,
+        nameEng: personalInfo.nameEng,
+        surnameEng: personalInfo.surnameEng,
+        birthDate: personalInfo.birthDate,
+        phone: personalInfo.phone,
+        lineId: personalInfo.lineId,
+        parentPhone: personalInfo.parentPhone,
+        gradeLevel: personalInfo.gradeLevel,
+        classroom: personalInfo.classroom,
+        studyPlan: personalInfo.studyPlan,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+
+      // 3. Create/Update Application Draft
+      // Use composite ID: projectId_userId
+      const appId = `${id}_${user.uid}`;
+      await setDoc(doc(db, 'applications', appId), {
+        projectId: id,
+        userId: user.uid,
+        personalData: personalInfo,
+        status: 'draft',
+        currentStep: 2, // Moving to Step 2
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+
+      // Move to consent form
+      setCurrentView('consent-form');
+
+    } catch (error: any) {
+      console.error(error);
+      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message);
+    } finally {
+      setSubmitting(false);
+    }
     // Move to upload documents view
-    setCurrentView('upload-docs');
+
   };
 
   // Handle Final Submit
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate consent
     if (!consentInfo.agreeFlightCost || !consentInfo.agreeNoRefund || !consentInfo.agreeLimitedSeats) {
       alert('กรุณายอมรับข้อตกลงทั้งหมด');
@@ -339,7 +416,7 @@ export default function ApplyPage() {
     }
   };
 
-  if (loading || authLoading) {
+  if (loading || authLoading || submitting) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -365,7 +442,7 @@ export default function ApplyPage() {
               variant="outline"
               className="w-full h-16 flex items-center justify-between"
             >
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-3">
                 <LogIn className="w-5 h-5" />
                 <div className="text-left">
                   <p className="font-semibold">มีบัญชีอยู่แล้ว</p>
@@ -379,7 +456,7 @@ export default function ApplyPage() {
               onClick={() => handleAuthSelection('register')}
               className="w-full h-16 flex items-center justify-between"
             >
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-3">
                 <User className="w-5 h-5" />
                 <div className="text-left">
                   <p className="font-semibold">สมัครครั้งแรก</p>
@@ -443,11 +520,11 @@ export default function ApplyPage() {
               {(
                 project.displayLocation || project.locations?.[0]
               ) && (
-                <div className="flex items-center gap-1 text-sm text-slate-600 mt-1">
-                  <MapPin className="w-4 h-4" />
-                  <span>{project.displayLocation || project.locations?.[0]}</span>
-                </div>
-              )}
+                  <div className="flex items-center gap-1 text-sm text-slate-600 mt-1">
+                    <MapPin className="w-4 h-4" />
+                    <span>{project.displayLocation || project.locations?.[0]}</span>
+                  </div>
+                )}
               {(project.startDate || project.endDate) && (
                 <div className="flex items-center gap-1 text-sm text-slate-600 mt-1">
                   <CalendarIcon className="w-4 h-4" />
@@ -500,7 +577,7 @@ export default function ApplyPage() {
                 <Label>ชื่อ (ไทย)</Label>
                 <Input
                   value={personalInfo.nameThai}
-                  onChange={(e) => setPersonalInfo({...personalInfo, nameThai: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, nameThai: e.target.value })}
                   required
                   className="bg-white"
                 />
@@ -509,7 +586,7 @@ export default function ApplyPage() {
                 <Label>นามสกุล (ไทย)</Label>
                 <Input
                   value={personalInfo.surnameThai}
-                  onChange={(e) => setPersonalInfo({...personalInfo, surnameThai: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, surnameThai: e.target.value })}
                   required
                   className="bg-white"
                 />
@@ -602,7 +679,7 @@ export default function ApplyPage() {
                 <Input
                   type="number"
                   value={personalInfo.weight || ''}
-                  onChange={(e) => setPersonalInfo({...personalInfo, weight: Number(e.target.value)})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, weight: Number(e.target.value) })}
                   required
                   className="bg-white"
                 />
@@ -612,7 +689,7 @@ export default function ApplyPage() {
                 <Input
                   type="number"
                   value={personalInfo.height || ''}
-                  onChange={(e) => setPersonalInfo({...personalInfo, height: Number(e.target.value)})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, height: Number(e.target.value) })}
                   required
                   className="bg-white"
                 />
@@ -625,7 +702,7 @@ export default function ApplyPage() {
                 <Label>รหัสนักเรียน</Label>
                 <Input
                   value={personalInfo.studentId}
-                  onChange={(e) => setPersonalInfo({...personalInfo, studentId: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, studentId: e.target.value })}
                   required
                   className="bg-white"
                 />
@@ -636,7 +713,7 @@ export default function ApplyPage() {
                   type="tel"
                   inputMode="numeric"
                   value={personalInfo.citizenId}
-                  onChange={(e) => setPersonalInfo({...personalInfo, citizenId: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, citizenId: e.target.value })}
                   maxLength={13}
                   required
                   className="bg-white"
@@ -646,7 +723,7 @@ export default function ApplyPage() {
                 <Label>เลขที่หนังสือเดินทาง</Label>
                 <Input
                   value={personalInfo.passportNo}
-                  onChange={(e) => setPersonalInfo({...personalInfo, passportNo: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, passportNo: e.target.value })}
                   required
                   className="bg-white"
                 />
@@ -660,7 +737,7 @@ export default function ApplyPage() {
                 <Input
                   type="tel"
                   value={personalInfo.phone}
-                  onChange={(e) => setPersonalInfo({...personalInfo, phone: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
                   required
                   className="bg-white"
                 />
@@ -670,7 +747,7 @@ export default function ApplyPage() {
                 <Input
                   type="tel"
                   value={personalInfo.parentPhone}
-                  onChange={(e) => setPersonalInfo({...personalInfo, parentPhone: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, parentPhone: e.target.value })}
                   required
                   className="bg-white"
                 />
@@ -683,7 +760,7 @@ export default function ApplyPage() {
                 <Input
                   type="email"
                   value={personalInfo.email}
-                  onChange={(e) => setPersonalInfo({...personalInfo, email: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, email: e.target.value })}
                   required
                   className="bg-white"
                 />
@@ -692,7 +769,7 @@ export default function ApplyPage() {
                 <Label>LINE ID</Label>
                 <Input
                   value={personalInfo.lineId}
-                  onChange={(e) => setPersonalInfo({...personalInfo, lineId: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, lineId: e.target.value })}
                   required
                   className="bg-white"
                 />
@@ -705,7 +782,7 @@ export default function ApplyPage() {
                 <Label>โรคประจำตัว (ถ้ามี)</Label>
                 <Textarea
                   value={personalInfo.diseases}
-                  onChange={(e) => setPersonalInfo({...personalInfo, diseases: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, diseases: e.target.value })}
                   placeholder="ระบุโรคประจำตัว"
                   className="bg-white text-sm placeholder:text-sm"
                 />
@@ -714,7 +791,7 @@ export default function ApplyPage() {
                 <Label>ข้อมูลการแพ้อาหาร (ถ้ามี)</Label>
                 <Textarea
                   value={personalInfo.allergies}
-                  onChange={(e) => setPersonalInfo({...personalInfo, allergies: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, allergies: e.target.value })}
                   placeholder="ระบุการแพ้อาหาร"
                   className="bg-white text-sm placeholder:text-sm"
                 />
@@ -910,45 +987,48 @@ export default function ApplyPage() {
         </Card>
         <form onSubmit={handleFinalSubmit} className="space-y-6 pb-24">
           {/* Consent Items: separate rows, no blue bg/border */}
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <Checkbox
-                checked={consentInfo.agreeFlightCost}
-                onCheckedChange={(checked) => setConsentInfo({...consentInfo, agreeFlightCost: checked as boolean})}
-                required
-              />
-              <label className="text-sm leading-relaxed">
-                ข้าพเจ้ารับทราบว่า จะต้องรับผิดชอบค่าตั๋วเครื่องบินไป-กลับ
-              </label>
+          <Card className="p-6">
+            <h2 className="font-semibold text-slate-800 mb-4">ข้อตกลงการเข้าร่วมโครงการ</h2>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={consentInfo.agreeFlightCost}
+                  onCheckedChange={(checked) => setConsentInfo({ ...consentInfo, agreeFlightCost: checked as boolean })}
+                  required
+                />
+                <label className="text-sm leading-relaxed">
+                  ข้าพเจ้ารับทราบว่า จะต้องรับผิดชอบค่าตั๋วเครื่องบินไป-กลับ
+                </label>
+              </div>
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={consentInfo.agreeNoRefund}
+                  onCheckedChange={(checked) => setConsentInfo({ ...consentInfo, agreeNoRefund: checked as boolean })}
+                  required
+                />
+                <label className="text-sm leading-relaxed">
+                  ข้าพเจ้ารับทราบว่า หากผ่านการคัดเลือกแล้ว จะไม่มีการคืนเงินในทุกกรณี
+                </label>
+              </div>
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={consentInfo.agreeLimitedSeats}
+                  onCheckedChange={(checked) => setConsentInfo({ ...consentInfo, agreeLimitedSeats: checked as boolean })}
+                  required
+                />
+                <label className="text-sm leading-relaxed">
+                  ข้าพเจ้าทราบว่ามีจำนวนรับจำกัด 20 คน และจะพิจารณาตามการสอบ/สัมภาษณ์
+                </label>
+              </div>
             </div>
-            <div className="flex items-start gap-3">
-              <Checkbox
-                checked={consentInfo.agreeNoRefund}
-                onCheckedChange={(checked) => setConsentInfo({...consentInfo, agreeNoRefund: checked as boolean})}
-                required
-              />
-              <label className="text-sm leading-relaxed">
-                ข้าพเจ้ารับทราบว่า หากผ่านการคัดเลือกแล้ว จะไม่มีการคืนเงินในทุกกรณี
-              </label>
-            </div>
-            <div className="flex items-start gap-3">
-              <Checkbox
-                checked={consentInfo.agreeLimitedSeats}
-                onCheckedChange={(checked) => setConsentInfo({...consentInfo, agreeLimitedSeats: checked as boolean})}
-                required
-              />
-              <label className="text-sm leading-relaxed">
-                ข้าพเจ้าทราบว่ามีจำนวนรับจำกัด 20 คน และจะพิจารณาตามการสอบ/สัมภาษณ์
-              </label>
-            </div>
-          </div>
+          </Card>
           {/* Reason & Channel */}
-          <div className="space-y-4">
+          <div className="p-2 space-y-4">
             <div>
               <Label>ทำไมถึงสนใจเข้าร่วมกิจกรรมนี้?</Label>
               <Textarea
                 value={consentInfo.whyJoin}
-                onChange={(e) => setConsentInfo({...consentInfo, whyJoin: e.target.value})}
+                onChange={(e) => setConsentInfo({ ...consentInfo, whyJoin: e.target.value })}
                 placeholder="กรุณาระบุเหตุผล..."
                 rows={4}
                 required

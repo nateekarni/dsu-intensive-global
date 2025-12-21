@@ -15,28 +15,38 @@ export default function FeedPage() {
 
   useEffect(() => {
     const fetchProjects = async () => {
-      // ดึงเฉพาะโครงการที่สถานะเป็น 'open'
-      const q = query(collection(db, "projects"), where("status", "==", "open"));
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)); // as any ชั่วคราวเพื่อให้ผ่าน type check
-      setProjects(data);
+      try {
+        // ดึงเฉพาะโครงการที่สถานะเป็น 'open'
+        const q = query(collection(db, "projects"), where("status", "==", "open"));
+        const querySnapshot = await getDocs(q);
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)); // as any ชั่วคราวเพื่อให้ผ่าน type check
+        setProjects(data);
 
-      // นับจำนวนผู้สมัครที่ผ่านการคัดเลือก (approved) ของแต่ละโครงการ
-      const stats: Record<string, number> = {};
-      await Promise.all(
-        data.map(async (p: any) => {
-          const appsSnap = await getDocs(
-            query(
-              collection(db, "applications"),
-              where("projectId", "==", p.id),
-              where("status", "==", "approved")
-            )
+        // นับจำนวนผู้สมัครที่ผ่านการคัดเลือก (approved) ของแต่ละโครงการ
+        // ใช้ try-catch แยกต่างหาก เพื่อให้ถ้า user ไม่ได้ login (ไม่มีสิทธิ์อ่าน applications) ก็ยังเห็น projects ได้
+        try {
+          const stats: Record<string, number> = {};
+          await Promise.all(
+            data.map(async (p: any) => {
+              const appsSnap = await getDocs(
+                query(
+                  collection(db, "applications"),
+                  where("projectId", "==", p.id),
+                  where("status", "==", "approved")
+                )
+              );
+              stats[p.id] = appsSnap.size;
+            })
           );
-          stats[p.id] = appsSnap.size;
-        })
-      );
-      setApplicationStats(stats);
-      setLoading(false);
+          setApplicationStats(stats);
+        } catch (error) {
+          console.warn("Could not fetch application stats (likely due to permissions):", error);
+        }
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchProjects();
   }, []);
