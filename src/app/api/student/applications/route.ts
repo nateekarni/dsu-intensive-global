@@ -19,7 +19,7 @@ export async function GET() {
             .where("userId", "==", userId)
             .get();
 
-        const applications = await Promise.all(snapshot.docs.map(async (doc) => {
+        const applications = await Promise.all(snapshot.docs.map(async (doc: any) => {
             const data = doc.data();
 
             // Fetch project details for display
