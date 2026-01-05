@@ -230,7 +230,10 @@ export default function AdminProjectList() {
             <div>
               <p className="text-sm text-slate-500">เปิดรับสมัคร</p>
               <p className="text-2xl font-bold text-slate-800">
-                {projects.filter(p => p.status === 'open').length}
+                {projects.filter(p => {
+                  const isExpired = p.closeDate ? p.closeDate.toDate() < new Date() : false;
+                  return p.status === 'open' && !isExpired;
+                }).length}
               </p>
             </div>
           </div>
@@ -243,7 +246,10 @@ export default function AdminProjectList() {
             <div>
               <p className="text-sm text-slate-500">ปิดรับสมัคร</p>
               <p className="text-2xl font-bold text-slate-800">
-                {projects.filter(p => p.status === 'closed').length}
+                {projects.filter(p => {
+                  const isExpired = p.closeDate ? p.closeDate.toDate() < new Date() : false;
+                  return p.status === 'closed' || isExpired;
+                }).length}
               </p>
             </div>
           </div>
@@ -340,15 +346,20 @@ export default function AdminProjectList() {
                       })()}
                     </TableCell>
                     <TableCell className="text-center">
-                      {project.status === 'open' ? (
-                        <Badge className="bg-green-100 text-green-700 hover:bg-green-200">
-                          เปิดรับสมัคร
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="bg-red-100 text-red-700">
-                          ปิดรับสมัคร
-                        </Badge>
-                      )}
+                      {(() => {
+                        const isExpired = project.closeDate ? project.closeDate.toDate() < new Date() : false;
+                        const isOpen = project.status === 'open' && !isExpired;
+
+                        return isOpen ? (
+                          <Badge className="bg-green-100 text-green-700 hover:bg-green-200">
+                            เปิดรับสมัคร
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="bg-red-100 text-red-700">
+                            {isExpired ? "ปิดรับสมัคร (หมดเวลา)" : "ปิดรับสมัคร"}
+                          </Badge>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell className="text-center">
                       <DropdownMenu>
@@ -392,6 +403,7 @@ export default function AdminProjectList() {
                               <>
                                 <Unlock className="w-4 h-4 mr-2" />
                                 เปิดรับสมัคร
+                                {(project.closeDate && project.closeDate.toDate() < new Date()) && " (หมดเวลาแล้ว)"}
                               </>
                             )}
                           </DropdownMenuItem>

@@ -10,12 +10,30 @@ export const initAdmin = (): App | null => {
 
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  // Handle newlines in private key which might be escaped in .env
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+  // Robust Private Key parsing
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+  if (privateKey) {
+    // 1. Remove surrounding quotes if present (common copy-paste error)
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.slice(1, -1);
+    }
+
+    // 2. Handle escaped newlines (standard Vercel/Env format)
+    if (privateKey.includes('\\n')) {
+      privateKey = privateKey.replace(/\\n/g, '\n');
+    }
+  }
 
   if (!projectId || !clientEmail || !privateKey) {
     console.warn('Missing Firebase Admin credentials in environment variables. Skipping initialization.');
     return null;
+  }
+
+  // Basic validation to help debug without leaking the key
+  if (!privateKey.includes('-----BEGIN PRIVATE KEY-----') || !privateKey.includes('-----END PRIVATE KEY-----')) {
+    console.error('Firebase Private Key seems malformed. It must contain "-----BEGIN PRIVATE KEY-----" and "-----END PRIVATE KEY-----".');
   }
 
   return initializeApp({
