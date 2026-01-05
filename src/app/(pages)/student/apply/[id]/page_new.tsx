@@ -11,27 +11,28 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  Loader2, 
-  CheckCircle, 
-  User, 
+import {
+  Loader2,
+  CheckCircle,
+  User,
   LogIn,
   ArrowRight,
   ArrowLeft
 } from "lucide-react";
 import { PersonalInfoForm, ConsentForm } from "@/types";
 
-export default function ApplyPage({ params }: { params: { id: string } }) {
+export default function ApplyPage({ params }: { params: Promise<{ id: string }> }) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  
+
+  const [projectId, setProjectId] = useState<string>("");
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  
+
   // Flow Control
   const [currentView, setCurrentView] = useState<'auth-select' | 'personal-form' | 'consent-form'>('auth-select');
-  
+
   // Form Data
   const [personalInfo, setPersonalInfo] = useState<PersonalInfoForm>({
     prefixThai: '',
@@ -53,6 +54,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
     diseases: '',
     allergies: '',
     gradeLevel: '',
+    classroom: '',
     studyPlan: '',
     gpa: 0,
   });
@@ -69,7 +71,9 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const docRef = doc(db, "projects", params.id);
+        const resolvedParams = await params;
+        setProjectId(resolvedParams.id);
+        const docRef = doc(db, "projects", resolvedParams.id);
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
           setProject({ id: snapshot.id, ...snapshot.data() });
@@ -83,7 +87,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
       setLoading(false);
     };
     fetchProject();
-  }, [params.id]);
+  }, [params]);
 
   // Check Auth Status
   useEffect(() => {
@@ -111,6 +115,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
             diseases: user.profile.diseases || '',
             allergies: user.profile.allergies || '',
             gradeLevel: user.profile.gradeLevel || '',
+            classroom: user.profile.classroom || '',
             studyPlan: user.profile.studyPlan || '',
             gpa: user.profile.gpa || 0,
           });
@@ -127,7 +132,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
   const handleAuthSelection = (type: 'login' | 'register') => {
     if (type === 'login') {
       // Redirect to login with return URL
-      router.push(`/auth/login?redirect=/student/apply/${params.id}`);
+      router.push(`/auth/login?redirect=/student/apply/${projectId}`);
     } else {
       // ไปหน้ากรอกข้อมูลเลย
       setCurrentView('personal-form');
@@ -137,13 +142,13 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
   // Handle Personal Form Submit
   const handlePersonalFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate required fields
     if (!personalInfo.prefixThai || !personalInfo.nameThai || !personalInfo.surnameThai) {
       alert('กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
     }
-    
+
     // Move to consent form
     setCurrentView('consent-form');
   };
@@ -151,7 +156,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
   // Handle Final Submit
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate consent
     if (!consentInfo.agreeFlightCost || !consentInfo.agreeNoRefund || !consentInfo.agreeLimitedSeats) {
       alert('กรุณายอมรับข้อตกลงทั้งหมด');
@@ -238,7 +243,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
 
       // สร้างใบสมัคร
       await addDoc(collection(db, 'applications'), {
-        projectId: params.id,
+        projectId: projectId,
         userId: userId,
         personalData: personalInfo,
         consent: consentInfo,
@@ -315,9 +320,9 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
   if (currentView === 'personal-form') {
     return (
       <div className="container mx-auto p-4 max-w-3xl pb-24">
-        <Button 
-          variant="ghost" 
-          className="mb-4" 
+        <Button
+          variant="ghost"
+          className="mb-4"
           onClick={() => !user ? setCurrentView('auth-select') : router.back()}
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> ย้อนกลับ
@@ -335,7 +340,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <select
                   className="w-full mt-1 p-2 border rounded-md"
                   value={personalInfo.prefixThai}
-                  onChange={(e) => setPersonalInfo({...personalInfo, prefixThai: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, prefixThai: e.target.value })}
                   required
                 >
                   <option value="">เลือก</option>
@@ -350,7 +355,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <select
                   className="w-full mt-1 p-2 border rounded-md"
                   value={personalInfo.prefixEng}
-                  onChange={(e) => setPersonalInfo({...personalInfo, prefixEng: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, prefixEng: e.target.value })}
                   required
                 >
                   <option value="">Select</option>
@@ -367,7 +372,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Label>ชื่อ (ไทย) *</Label>
                 <Input
                   value={personalInfo.nameThai}
-                  onChange={(e) => setPersonalInfo({...personalInfo, nameThai: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, nameThai: e.target.value })}
                   required
                 />
               </div>
@@ -375,7 +380,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Label>นามสกุล (ไทย) *</Label>
                 <Input
                   value={personalInfo.surnameThai}
-                  onChange={(e) => setPersonalInfo({...personalInfo, surnameThai: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, surnameThai: e.target.value })}
                   required
                 />
               </div>
@@ -387,7 +392,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Label>ชื่อ (อังกฤษ) *</Label>
                 <Input
                   value={personalInfo.nameEng}
-                  onChange={(e) => setPersonalInfo({...personalInfo, nameEng: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, nameEng: e.target.value })}
                   required
                 />
               </div>
@@ -395,7 +400,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Label>นามสกุล (อังกฤษ) *</Label>
                 <Input
                   value={personalInfo.surnameEng}
-                  onChange={(e) => setPersonalInfo({...personalInfo, surnameEng: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, surnameEng: e.target.value })}
                   required
                 />
               </div>
@@ -408,7 +413,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Input
                   type="date"
                   value={personalInfo.birthDate}
-                  onChange={(e) => setPersonalInfo({...personalInfo, birthDate: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, birthDate: e.target.value })}
                   required
                 />
               </div>
@@ -417,7 +422,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Input
                   type="number"
                   value={personalInfo.weight || ''}
-                  onChange={(e) => setPersonalInfo({...personalInfo, weight: Number(e.target.value)})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, weight: Number(e.target.value) })}
                   required
                 />
               </div>
@@ -426,7 +431,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Input
                   type="number"
                   value={personalInfo.height || ''}
-                  onChange={(e) => setPersonalInfo({...personalInfo, height: Number(e.target.value)})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, height: Number(e.target.value) })}
                   required
                 />
               </div>
@@ -438,7 +443,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Label>รหัสนักเรียน *</Label>
                 <Input
                   value={personalInfo.studentId}
-                  onChange={(e) => setPersonalInfo({...personalInfo, studentId: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, studentId: e.target.value })}
                   required
                 />
               </div>
@@ -446,7 +451,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Label>เลขบัตรประชาชน *</Label>
                 <Input
                   value={personalInfo.citizenId}
-                  onChange={(e) => setPersonalInfo({...personalInfo, citizenId: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, citizenId: e.target.value })}
                   maxLength={13}
                   required
                 />
@@ -455,7 +460,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Label>เลขที่หนังสือเดินทาง *</Label>
                 <Input
                   value={personalInfo.passportNo}
-                  onChange={(e) => setPersonalInfo({...personalInfo, passportNo: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, passportNo: e.target.value })}
                   required
                 />
               </div>
@@ -468,7 +473,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Input
                   type="tel"
                   value={personalInfo.phone}
-                  onChange={(e) => setPersonalInfo({...personalInfo, phone: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
                   required
                 />
               </div>
@@ -477,7 +482,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Input
                   type="tel"
                   value={personalInfo.parentPhone}
-                  onChange={(e) => setPersonalInfo({...personalInfo, parentPhone: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, parentPhone: e.target.value })}
                   required
                 />
               </div>
@@ -489,7 +494,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Input
                   type="email"
                   value={personalInfo.email}
-                  onChange={(e) => setPersonalInfo({...personalInfo, email: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, email: e.target.value })}
                   required
                 />
               </div>
@@ -497,7 +502,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Label>LINE ID *</Label>
                 <Input
                   value={personalInfo.lineId}
-                  onChange={(e) => setPersonalInfo({...personalInfo, lineId: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, lineId: e.target.value })}
                   required
                 />
               </div>
@@ -509,7 +514,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Label>โรคประจำตัว</Label>
                 <Textarea
                   value={personalInfo.diseases}
-                  onChange={(e) => setPersonalInfo({...personalInfo, diseases: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, diseases: e.target.value })}
                   placeholder="ระบุโรคประจำตัว (ถ้ามี)"
                 />
               </div>
@@ -517,7 +522,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Label>ข้อมูลการแพ้อาหาร</Label>
                 <Textarea
                   value={personalInfo.allergies}
-                  onChange={(e) => setPersonalInfo({...personalInfo, allergies: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, allergies: e.target.value })}
                   placeholder="ระบุการแพ้อาหาร (ถ้ามี)"
                 />
               </div>
@@ -529,7 +534,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Label>ระดับชั้นการเรียน *</Label>
                 <Input
                   value={personalInfo.gradeLevel}
-                  onChange={(e) => setPersonalInfo({...personalInfo, gradeLevel: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, gradeLevel: e.target.value })}
                   placeholder="เช่น ม.4"
                   required
                 />
@@ -538,7 +543,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Label>แผนการเรียน *</Label>
                 <Input
                   value={personalInfo.studyPlan}
-                  onChange={(e) => setPersonalInfo({...personalInfo, studyPlan: e.target.value})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, studyPlan: e.target.value })}
                   placeholder="เช่น วิทย์-คณิต"
                   required
                 />
@@ -550,7 +555,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                   step="0.01"
                   max="4.00"
                   value={personalInfo.gpa || ''}
-                  onChange={(e) => setPersonalInfo({...personalInfo, gpa: Number(e.target.value)})}
+                  onChange={(e) => setPersonalInfo({ ...personalInfo, gpa: Number(e.target.value) })}
                   required
                 />
               </div>
@@ -569,9 +574,9 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
   if (currentView === 'consent-form') {
     return (
       <div className="container mx-auto p-4 max-w-3xl pb-24">
-        <Button 
-          variant="ghost" 
-          className="mb-4" 
+        <Button
+          variant="ghost"
+          className="mb-4"
           onClick={() => setCurrentView('personal-form')}
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> ย้อนกลับ
@@ -585,12 +590,12 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
             {/* ข้อตกลง */}
             <div className="space-y-4 border-l-4 border-blue-500 pl-4 bg-blue-50 p-4 rounded">
               <h3 className="font-semibold text-lg">ข้อตกลง</h3>
-              
+
               <div className="flex items-start gap-3">
                 <Checkbox
                   checked={consentInfo.agreeFlightCost}
-                  onCheckedChange={(checked) => 
-                    setConsentInfo({...consentInfo, agreeFlightCost: checked as boolean})
+                  onCheckedChange={(checked) =>
+                    setConsentInfo({ ...consentInfo, agreeFlightCost: checked as boolean })
                   }
                   required
                 />
@@ -602,13 +607,13 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
               <div className="flex items-start gap-3">
                 <Checkbox
                   checked={consentInfo.agreeNoRefund}
-                  onCheckedChange={(checked) => 
-                    setConsentInfo({...consentInfo, agreeNoRefund: checked as boolean})
+                  onCheckedChange={(checked) =>
+                    setConsentInfo({ ...consentInfo, agreeNoRefund: checked as boolean })
                   }
                   required
                 />
                 <label className="text-sm leading-relaxed">
-                  ข้าพเจ้ารับทราบว่า หากผ่านการคัดเลือกเข้าร่วมโครงการแล้ว และชำระเงินค่าตั๋วเครื่องบินเรียบร้อยแล้ว 
+                  ข้าพเจ้ารับทราบว่า หากผ่านการคัดเลือกเข้าร่วมโครงการแล้ว และชำระเงินค่าตั๋วเครื่องบินเรียบร้อยแล้ว
                   จะไม่สามารถยกเลิกได้ในภายหลัง และจะไม่มีการคืนเงินในทุกกรณี
                 </label>
               </div>
@@ -616,8 +621,8 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
               <div className="flex items-start gap-3">
                 <Checkbox
                   checked={consentInfo.agreeLimitedSeats}
-                  onCheckedChange={(checked) => 
-                    setConsentInfo({...consentInfo, agreeLimitedSeats: checked as boolean})
+                  onCheckedChange={(checked) =>
+                    setConsentInfo({ ...consentInfo, agreeLimitedSeats: checked as boolean })
                   }
                   required
                 />
@@ -633,7 +638,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <Label>ทำไมถึงสนใจเข้าร่วมกิจกรรมนี้? *</Label>
                 <Textarea
                   value={consentInfo.whyJoin}
-                  onChange={(e) => setConsentInfo({...consentInfo, whyJoin: e.target.value})}
+                  onChange={(e) => setConsentInfo({ ...consentInfo, whyJoin: e.target.value })}
                   placeholder="กรุณาระบุเหตุผล..."
                   rows={4}
                   required
@@ -645,7 +650,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                 <select
                   className="w-full mt-1 p-2 border rounded-md"
                   value={consentInfo.howKnow}
-                  onChange={(e) => setConsentInfo({...consentInfo, howKnow: e.target.value})}
+                  onChange={(e) => setConsentInfo({ ...consentInfo, howKnow: e.target.value })}
                   required
                 >
                   <option value="">เลือก</option>
@@ -659,9 +664,9 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full h-12" 
+            <Button
+              type="submit"
+              className="w-full h-12"
               disabled={submitting}
             >
               {submitting ? (
