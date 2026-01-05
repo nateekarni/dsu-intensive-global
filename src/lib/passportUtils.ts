@@ -16,7 +16,8 @@ export const processPassportImage = async (imageFile: File): Promise<OCRResult> 
   try {
     // 1. Run Tesseract OCR
     const result = await Tesseract.recognize(imageFile, 'eng');
-    const words = result.data.words;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const words = (result.data as any).words;
 
     // 2. ค้นหาข้อมูลจากข้อความที่อ่านได้
     let passportNo = null;
@@ -26,7 +27,7 @@ export const processPassportImage = async (imageFile: File): Promise<OCRResult> 
     // หาเลข Passport และ Expiry Date
     for (const word of words) {
       const text = word.text.toUpperCase().replace(/[^A-Z0-9]/g, '');
-      
+
       // หาเลข Passport
       if (!passportNo && PASSPORT_REGEX.test(text) && text.length >= 7) {
         passportNo = text;
@@ -40,7 +41,7 @@ export const processPassportImage = async (imageFile: File): Promise<OCRResult> 
     if (dates && dates.length > 0) {
       // มักจะเป็นวันที่หลังสุดในเอกสาร (Date of expiry)
       // *ในระบบจริงอาจต้องใช้ Logic ที่ซับซ้อนกว่านี้เพื่อระบุตำแหน่ง Expiry ให้แม่นยำ
-      expiryDate = dates[dates.length - 1]; 
+      expiryDate = dates[dates.length - 1];
     }
 
     // 3. ตรวจสอบอายุ Passport (ต้อง > 6 เดือน)
@@ -48,13 +49,13 @@ export const processPassportImage = async (imageFile: File): Promise<OCRResult> 
       const exp = new Date(expiryDate);
       const sixMonthsFromNow = new Date();
       sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
-      
+
       if (exp < sixMonthsFromNow) {
-        return { 
-          passportNo, 
-          expiryDate, 
-          annotatedImageBlob: null, 
-          error: "Passport หมดอายุหรือเหลือน้อยกว่า 6 เดือน (" + expiryDate + ")" 
+        return {
+          passportNo,
+          expiryDate,
+          annotatedImageBlob: null,
+          error: "Passport หมดอายุหรือเหลือน้อยกว่า 6 เดือน (" + expiryDate + ")"
         };
       }
     }
@@ -65,7 +66,7 @@ export const processPassportImage = async (imageFile: File): Promise<OCRResult> 
       annotatedBlob = await drawEllipseOnImage(imageFile, passportBbox);
     } else {
       // ถ้าหาเลขไม่เจอ ก็คืนรูปเดิมไป
-      annotatedBlob = imageFile; 
+      annotatedBlob = imageFile;
     }
 
     return { passportNo, expiryDate, annotatedImageBlob: annotatedBlob };
