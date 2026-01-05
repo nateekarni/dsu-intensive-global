@@ -237,7 +237,7 @@ export default function ReviewsListPage() {
         groupByProject ? (
           /* Grouped View */
           <div className="space-y-4">
-            {Object.entries(groupedApplications).map(([projectId, group]) => (
+            {(Object.entries(groupedApplications) as [string, { projectTitle: string; applications: any[] }][]).map(([projectId, group]) => (
               <Card key={projectId} className="shadow-sm">
                 <div className="p-4 border-b bg-slate-50">
                   <h3 className="font-semibold text-lg text-slate-800">{group.projectTitle}</h3>
