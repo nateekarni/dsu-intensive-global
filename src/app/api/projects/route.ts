@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
     try {
         const snapshot = await adminDb.collection("projects").get();
-        const projects = snapshot.docs.map(doc => ({
+        const projects = snapshot.docs.map((doc: any) => ({
             id: doc.id,
             ...doc.data(),
             // Serialize dates if necessary, or let JSON.stringify handle it carefully
