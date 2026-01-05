@@ -1,10 +1,10 @@
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 
 export async function GET(
-    request: Request,
-    { params }: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { id } = await params; // Await params in Next.js 15+
