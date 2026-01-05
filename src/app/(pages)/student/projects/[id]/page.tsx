@@ -2,8 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+// Removed firebase/firestore imports to use API instead for Guest Access
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,13 +29,30 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
     const fetchProject = async () => {
       if (typeof id === 'string') {
-        const docSnap = await getDoc(doc(db, "projects", id));
-        if (docSnap.exists()) {
-          setProject({ id: docSnap.id, ...docSnap.data() });
+        try {
+          // Use API instead of Firestore Client SDK to allow Guest Access
+          const res = await fetch(`/api/projects/${id}`);
+          if (res.ok) {
+            const data = await res.json();
+            setProject(data);
+
+            // Check Expiration
+            if (data.closeDate) {
+              const closeDate = new Date(data.closeDate);
+              const now = new Date();
+              // Reset time part to ensure fair comparison if needed, or strict comparison
+              if (now > closeDate) {
+                setIsExpired(true);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching project:", error);
         }
       }
       setLoading(false);
@@ -45,6 +61,8 @@ export default function ProjectDetailPage() {
   }, [id]);
 
   const handleApply = () => {
+    if (isExpired) return; // Prevent apply if expired
+
     if (typeof id === "string") {
       if (user) {
         router.push(`/student/apply/${id}`);
@@ -54,9 +72,13 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const formatThaiDate = (timestamp: any) => {
-    if (!timestamp) return "";
-    const date = timestamp.toDate();
+  const formatThaiDate = (dateStringOrTimestamp: any) => {
+    if (!dateStringOrTimestamp) return "";
+    // Handle both Firestore Timestamp (if leaked) and ISO string (from API)
+    const date = typeof dateStringOrTimestamp === 'string'
+      ? new Date(dateStringOrTimestamp)
+      : dateStringOrTimestamp.toDate ? dateStringOrTimestamp.toDate() : new Date(dateStringOrTimestamp);
+
     return date.toLocaleDateString("th-TH", {
       day: "numeric",
       month: "short",
@@ -274,15 +296,19 @@ export default function ProjectDetailPage() {
                 ? `฿${project.costs.amount.toLocaleString()}`
                 : "-"}
             </p>
-            <p className="text-xs text-slate-400">
-              ปิดรับสมัคร: {formatThaiDate(project.closeDate)}
+            <p className={cn("text-xs", isExpired ? "text-red-500 font-bold" : "text-slate-400")}>
+              {isExpired ? "ปิดรับสมัครแล้ว" : `ปิดรับสมัคร: ${formatThaiDate(project.closeDate)}`}
             </p>
           </div>
           <Button
             onClick={handleApply}
-            className="px-6 h-10 text-base font-semibold bg-blue-600 hover:bg-blue-700 shadow-lg"
+            disabled={isExpired}
+            className={cn(
+              "px-6 h-10 text-base font-semibold shadow-lg",
+              isExpired ? "bg-slate-300 hover:bg-slate-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+            )}
           >
-            สมัคร
+            {isExpired ? "ปิดรับสมัคร" : "สมัคร"}
           </Button>
         </div>
       </div>

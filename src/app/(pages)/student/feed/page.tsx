@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function FeedPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -25,8 +26,10 @@ export default function FeedPage() {
         // The previous code filtered where("status", "==", "open").
         // Let's filter here to be safe, or update API to filter.
         // Let's filter client side for now.
-        const openProjects = data.filter((p: any) => p.status === 'open');
-        setProjects(openProjects);
+        // Fetch all projects and determine status client-side (including expired)
+        // const openProjects = data.filter((p: any) => p.status === 'open'); 
+        // We now show all projects but mark closed/expired ones
+        setProjects(data);
       } catch (error) {
         console.error("Error fetching projects:", error);
       } finally {
@@ -48,42 +51,60 @@ export default function FeedPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project) => (
-          <Link key={project.id} href={`/student/projects/${project.id}`}>
-            <Card className="overflow-hidden cursor-pointer hover:shadow-lg transition-all group h-full flex flex-col">
-              <div className="aspect-video w-full bg-slate-200 relative overflow-hidden">
-                <img
-                  src={project.coverImage || "https://placehold.co/600x400"}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <Badge className="absolute top-2 right-2 bg-green-500 hover:bg-green-600">
-                  เปิดรับสมัคร
-                </Badge>
-              </div>
-              <div className="p-4 flex-1 flex flex-col">
-                <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-colors">
-                  {project.title}
-                </h3>
-                <p className="text-sm text-slate-500 mb-2 line-clamp-2">
-                  {project.description}
-                </p>
-                <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span className="truncate">
-                    {project.displayLocation || project.locations?.join(", ") || "-"}
-                  </span>
-                </div>
+        {projects.map((project) => {
+          // Handle closeDate which might be ISO string (from API) or Timestamp (if cached/direct)
+          let closeDateObj: Date | null = null;
+          if (project.closeDate) {
+            if (typeof project.closeDate === 'string') {
+              closeDateObj = new Date(project.closeDate);
+            } else if ((project.closeDate as any).toDate) {
+              closeDateObj = (project.closeDate as any).toDate();
+            }
+          }
 
-                <div className="mt-auto pt-3 border-t flex items-center justify-between text-xs text-slate-500">
-                  <span className="font-bold text-primary text-base">
-                    ฿{project.costs?.amount?.toLocaleString() ?? "0"}
-                  </span>
-                  {/* Stats removed for privacy as requested, or can add back if API exposes count */}
+          const isExpired = closeDateObj ? closeDateObj < new Date() : false;
+          const isClosed = project.status === 'closed' || isExpired;
+
+          return (
+            <Link key={project.id} href={`/student/projects/${project.id}`}>
+              <Card className="overflow-hidden cursor-pointer hover:shadow-lg transition-all group h-full flex flex-col">
+                <div className="aspect-video w-full bg-slate-200 relative overflow-hidden">
+                  <img
+                    src={project.coverImage || "https://placehold.co/600x400"}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <Badge className={cn(
+                    "absolute top-2 right-2",
+                    isClosed ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
+                  )}>
+                    {isClosed ? "ปิดรับสมัคร" : "เปิดรับสมัคร"}
+                  </Badge>
                 </div>
-              </div>
-            </Card>
-          </Link>
-        ))}
+                <div className="p-4 flex-1 flex flex-col">
+                  <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-colors">
+                    {project.title}
+                  </h3>
+                  <p className="text-sm text-slate-500 mb-2 line-clamp-2">
+                    {project.description}
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span className="truncate">
+                      {project.displayLocation || project.locations?.join(", ") || "-"}
+                    </span>
+                  </div>
+
+                  <div className="mt-auto pt-3 border-t flex items-center justify-between text-xs text-slate-500">
+                    <span className="font-bold text-primary text-base">
+                      ฿{project.costs?.amount?.toLocaleString() ?? "0"}
+                    </span>
+                    {/* Stats removed for privacy as requested, or can add back if API exposes count */}
+                  </div>
+                </div>
+              </Card>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

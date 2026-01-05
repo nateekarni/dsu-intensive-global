@@ -275,11 +275,11 @@ export default function EditProjectPage() {
         closeDate: Timestamp.fromDate(new Date(closeDate)),
         locations: locations.filter(l => l.trim()),
         recruitmentType,
-        capacity: parseInt(capacity),
+        capacity: parseInt(capacity) || 0,
         qualifications,
         requiredDocuments: uploadedDocs,
         cost: {
-          amount: parseFloat(costAmount),
+          amount: parseFloat(costAmount) || 0,
           included: costIncluded,
           excluded: costExcluded,
         },

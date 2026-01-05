@@ -6,6 +6,12 @@ export async function GET(
     props: { params: Promise<{ id: string }> }
 ) {
     const params = await props.params;
+
+    // Check if Firebase Admin is initialized
+    if (!adminDb.collection) {
+        return NextResponse.json({ error: "Service Unavailable" }, { status: 503 });
+    }
+
     const { id } = params;
 
     try {
