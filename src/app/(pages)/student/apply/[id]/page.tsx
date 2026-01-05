@@ -65,7 +65,7 @@ interface ProjectDoc {
   description?: string;
   locations?: string[];
   qualifications?: string[];
-  documents?: { id: string; name: string }[];
+  documents?: { id: string; name: string; isRequired?: boolean }[];
   costs?: {
     amount?: number;
     included?: string[];
@@ -596,9 +596,11 @@ export default function ApplyPage() {
     }
 
     // Check missing docs using shared logic
-    const requiredDocs = project?.documents || [];
-    const uploadedCount = Object.keys(uploadedDocs).length;
-    const isMissing = uploadedCount < requiredDocs.length;
+    const allDocs = project?.documents || [];
+    const requiredDocs = allDocs.filter(d => d.isRequired !== false);
+
+    // Check if any REQUIRED doc is missing from uploadedDocs
+    const isMissing = requiredDocs.some(d => !uploadedDocs[d.id]);
 
     if (isMissing) {
       setDocConfirmModalOpen(true);
@@ -624,9 +626,11 @@ export default function ApplyPage() {
       }
 
       // 2. Create Application
-      const requiredDocsCount = project?.documents?.length || 0;
-      const uploadedCount = Object.keys(uploadedDocs).length;
-      const initialStatus = uploadedCount < requiredDocsCount ? 'incomplete' : 'pending';
+      const allDocs = project?.documents || [];
+      const requiredDocs = allDocs.filter(d => d.isRequired !== false);
+      const isMissingRequired = requiredDocs.some(d => !uploadedDocs[d.id]);
+
+      const initialStatus = isMissingRequired ? 'incomplete' : 'pending';
 
       const appData = {
         projectId: project?.id,
@@ -659,9 +663,9 @@ export default function ApplyPage() {
 
   const handleFinalApplicationSubmit = async () => {
     // Check missing docs
-    const requiredDocs = project?.documents || [];
-    const uploadedCount = Object.keys(uploadedDocs).length;
-    const isMissing = uploadedCount < requiredDocs.length;
+    const allDocs = project?.documents || [];
+    const requiredDocs = allDocs.filter(d => d.isRequired !== false);
+    const isMissing = requiredDocs.some(d => !uploadedDocs[d.id]);
 
     if (isMissing) {
       setDocConfirmModalOpen(true);
@@ -1308,9 +1312,12 @@ export default function ApplyPage() {
                         {uploadedDocs[doc.id] ? <CheckCircle className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
                       </div>
                       <div>
-                        <h4 className="font-semibold text-slate-900 text-sm">{doc.name}</h4>
-                        <p className={cn("text-xs mt-1 font-medium", uploadedDocs[doc.id] ? "text-green-600" : "text-amber-600")}>
-                          {uploadedDocs[doc.id] ? "อัปโหลดเรียบร้อยแล้ว" : "จำเป็นต้องอัปโหลด"}
+                        <h4 className="font-semibold text-slate-900 text-sm">
+                          {doc.name}
+                          {doc.isRequired !== false && <span className="text-red-500 ml-1">*</span>}
+                        </h4>
+                        <p className={cn("text-xs mt-1 font-medium", uploadedDocs[doc.id] ? "text-green-600" : (doc.isRequired !== false ? "text-amber-600" : "text-slate-500"))}>
+                          {uploadedDocs[doc.id] ? "อัปโหลดเรียบร้อยแล้ว" : (doc.isRequired !== false ? "จำเป็นต้องอัปโหลด" : "ไม่บังคับ (Optional)")}
                         </p>
                         {uploadedDocs[doc.id] && (
                           <p className="text-[10px] text-slate-500 mt-1 truncate max-w-[150px]">{uploadedDocs[doc.id].name}</p>

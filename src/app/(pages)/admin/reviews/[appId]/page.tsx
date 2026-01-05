@@ -6,7 +6,8 @@ import { db } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Banknote, CheckCircle, XCircle, ArrowLeft, FileText, Upload, AlertCircle } from "lucide-react";
+import { Banknote, CheckCircle, XCircle, ArrowLeft, FileText, Upload, AlertCircle, Pencil, Save, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -64,6 +65,7 @@ export default function ReviewPage() {
         if (snap.exists()) {
           const appData = { id: snap.id, ...snap.data() } as any;
           setApp(appData);
+          setFormData(appData.personalData || {}); // Init Form Data
 
           // Fetch Project for requirements
           if (appData.projectId) {
@@ -77,6 +79,32 @@ export default function ReviewPage() {
     };
     fetch();
   }, [appId]);
+
+  // Edit Mode State
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<any>({});
+
+  const handleSaveInfo = async () => {
+    if (!app) return;
+    try {
+      await updateDoc(doc(db, "applications", app.id), {
+        personalData: formData
+      });
+      setApp({ ...app, personalData: formData });
+      setIsEditing(false);
+      setAlertMessage("บันทึกข้อมูลเรียบร้อย");
+      setAlertOpen(true);
+    } catch (e) {
+      console.error(e);
+      setAlertMessage("เกิดข้อผิดพลาดในการบันทึก");
+      setAlertOpen(true);
+    }
+  };
+
+  const cancelEdit = () => {
+    setFormData(app.personalData || {});
+    setIsEditing(false);
+  };
 
   const calculateAppStatus = (uploadedDocs: any, projectDocs: any[]) => {
     const docs = Object.values(uploadedDocs || {});
@@ -180,9 +208,25 @@ export default function ReviewPage() {
           </Badge>
         </h1>
         <div className="flex gap-2">
-          <Button variant="outline" className="border-green-200 text-green-700 bg-green-50" onClick={markAsPaidCash}>
-            <Banknote className="w-4 h-4 mr-2" /> รับเงินสด
-          </Button>
+          {!isEditing ? (
+            <>
+              <Button variant="outline" onClick={() => setIsEditing(true)}>
+                <Pencil className="w-4 h-4 mr-2" /> แก้ไขข้อมูล
+              </Button>
+              <Button variant="outline" className="border-green-200 text-green-700 bg-green-50" onClick={markAsPaidCash}>
+                <Banknote className="w-4 h-4 mr-2" /> รับเงินสด
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={cancelEdit} className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200">
+                <X className="w-4 h-4 mr-2" /> ยกเลิก
+              </Button>
+              <Button onClick={handleSaveInfo} className="bg-blue-600 hover:bg-blue-700">
+                <Save className="w-4 h-4 mr-2" /> บันทึก
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -195,47 +239,69 @@ export default function ReviewPage() {
             <div className="grid grid-cols-2 gap-y-3 text-sm">
               <div className="col-span-2 md:col-span-1">
                 <p className="text-slate-500 text-xs">ชื่อ-นามสกุล (ไทย)</p>
-                <p className="font-medium">{p.prefixThai} {p.nameThai} {p.surnameThai}</p>
+                {isEditing ? (
+                  <div className="flex gap-2">
+                    <Input value={formData.nameThai} onChange={e => setFormData({ ...formData, nameThai: e.target.value })} className="h-8" placeholder="ชื่อ" />
+                    <Input value={formData.surnameThai} onChange={e => setFormData({ ...formData, surnameThai: e.target.value })} className="h-8" placeholder="นามสกุล" />
+                  </div>
+                ) : (
+                  <p className="font-medium">{p.prefixThai} {p.nameThai} {p.surnameThai}</p>
+                )}
               </div>
               <div className="col-span-2 md:col-span-1">
                 <p className="text-slate-500 text-xs">Name-Surname (Eng)</p>
-                <p className="font-medium">{p.prefixEng} {p.nameEng} {p.surnameEng}</p>
+                {isEditing ? (
+                  <div className="flex gap-2">
+                    <Input value={formData.nameEng} onChange={e => setFormData({ ...formData, nameEng: e.target.value })} className="h-8" placeholder="Name" />
+                    <Input value={formData.surnameEng} onChange={e => setFormData({ ...formData, surnameEng: e.target.value })} className="h-8" placeholder="Surname" />
+                  </div>
+                ) : (
+                  <p className="font-medium">{p.prefixEng} {p.nameEng} {p.surnameEng}</p>
+                )}
               </div>
 
               <div>
                 <p className="text-slate-500 text-xs">วันเกิด</p>
-                <p>{p.birthDate || "-"}</p>
+                {isEditing ? <Input value={formData.birthDate} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} className="h-8" /> : <p>{p.birthDate || "-"}</p>}
               </div>
               <div>
                 <p className="text-slate-500 text-xs">เลขบัตรประชาชน</p>
-                <p>{p.citizenId || "-"}</p>
+                {isEditing ? <Input value={formData.citizenId} onChange={e => setFormData({ ...formData, citizenId: e.target.value })} className="h-8" /> : <p>{p.citizenId || "-"}</p>}
               </div>
 
               <div>
                 <p className="text-slate-500 text-xs">น้ำหนัก / ส่วนสูง</p>
-                <p>{p.weight || "-"} กก. / {p.height || "-"} ซม.</p>
+                {isEditing ? (
+                  <div className="flex gap-2 items-center">
+                    <Input type="number" value={formData.weight} onChange={e => setFormData({ ...formData, weight: Number(e.target.value) })} className="h-8 w-20" placeholder="กก." />
+                    /
+                    <Input type="number" value={formData.height} onChange={e => setFormData({ ...formData, height: Number(e.target.value) })} className="h-8 w-20" placeholder="ซม." />
+                  </div>
+                ) : (
+                  <p>{p.weight || "-"} กก. / {p.height || "-"} ซม.</p>
+                )}
               </div>
               <div>
                 <p className="text-slate-500 text-xs">Passport No.</p>
-                <p>{p.passportNo || "-"}</p>
+                {isEditing ? <Input value={formData.passportNo} onChange={e => setFormData({ ...formData, passportNo: e.target.value })} className="h-8" /> : <p>{p.passportNo || "-"}</p>}
               </div>
 
               <div>
                 <p className="text-slate-500 text-xs">เบอร์โทรศัพท์</p>
-                <p>{p.phone || "-"}</p>
+                {isEditing ? <Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="h-8" /> : <p>{p.phone || "-"}</p>}
               </div>
               <div>
                 <p className="text-slate-500 text-xs">Line ID</p>
-                <p>{p.lineId || "-"}</p>
+                {isEditing ? <Input value={formData.lineId} onChange={e => setFormData({ ...formData, lineId: e.target.value })} className="h-8" /> : <p>{p.lineId || "-"}</p>}
               </div>
 
               <div>
                 <p className="text-slate-500 text-xs">Email</p>
-                <p>{p.email || "-"}</p>
+                {isEditing ? <Input value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="h-8" /> : <p>{p.email || "-"}</p>}
               </div>
               <div>
                 <p className="text-slate-500 text-xs">เบอร์ผู้ปกครอง</p>
-                <p>{p.parentPhone || "-"}</p>
+                {isEditing ? <Input value={formData.parentPhone} onChange={e => setFormData({ ...formData, parentPhone: e.target.value })} className="h-8" /> : <p>{p.parentPhone || "-"}</p>}
               </div>
             </div>
           </Card>
@@ -246,28 +312,35 @@ export default function ReviewPage() {
             <div className="grid grid-cols-2 gap-y-3 text-sm">
               <div>
                 <p className="text-slate-500 text-xs">รหัสนักเรียน</p>
-                <p>{p.studentId || "-"}</p>
+                {isEditing ? <Input value={formData.studentId} onChange={e => setFormData({ ...formData, studentId: e.target.value })} className="h-8" /> : <p>{p.studentId || "-"}</p>}
               </div>
               <div>
                 <p className="text-slate-500 text-xs">ระดับชั้น / ห้อง</p>
-                <p>{p.gradeLevel || "-"} / {p.classroom || "-"}</p>
+                {isEditing ? (
+                  <div className="flex gap-2">
+                    <Input value={formData.gradeLevel} onChange={e => setFormData({ ...formData, gradeLevel: e.target.value })} className="h-8 w-16" placeholder="ระดับ" />
+                    <Input value={formData.classroom} onChange={e => setFormData({ ...formData, classroom: e.target.value })} className="h-8 w-16" placeholder="ห้อง" />
+                  </div>
+                ) : (
+                  <p>{p.gradeLevel || "-"} / {p.classroom || "-"}</p>
+                )}
               </div>
               <div>
                 <p className="text-slate-500 text-xs">แผนการเรียน</p>
-                <p>{p.studyPlan || "-"}</p>
+                {isEditing ? <Input value={formData.studyPlan} onChange={e => setFormData({ ...formData, studyPlan: e.target.value })} className="h-8" /> : <p>{p.studyPlan || "-"}</p>}
               </div>
               <div>
                 <p className="text-slate-500 text-xs">เกรดเฉลี่ย (GPA)</p>
-                <p>{p.gpa || "-"}</p>
+                {isEditing ? <Input type="number" value={formData.gpa} onChange={e => setFormData({ ...formData, gpa: Number(e.target.value) })} className="h-8" /> : <p>{p.gpa || "-"}</p>}
               </div>
 
               <div className="col-span-2 border-t pt-2 mt-1">
                 <p className="text-slate-500 text-xs">โรคประจำตัว</p>
-                <p className="text-red-600 font-medium">{p.diseases || "-"}</p>
+                {isEditing ? <Input value={formData.diseases} onChange={e => setFormData({ ...formData, diseases: e.target.value })} className="h-8" /> : <p className="text-red-600 font-medium">{p.diseases || "-"}</p>}
               </div>
               <div className="col-span-2">
                 <p className="text-slate-500 text-xs">แพ้ยา / แพ้อาหาร</p>
-                <p className="text-red-600 font-medium">{p.allergies || "-"}</p>
+                {isEditing ? <Input value={formData.allergies} onChange={e => setFormData({ ...formData, allergies: e.target.value })} className="h-8" /> : <p className="text-red-600 font-medium">{p.allergies || "-"}</p>}
               </div>
             </div>
           </Card>

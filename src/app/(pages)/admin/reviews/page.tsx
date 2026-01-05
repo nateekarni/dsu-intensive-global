@@ -247,7 +247,7 @@ export default function ReviewsListPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-slate-50">
-                        <TableHead className="w-[30px] text-center">#</TableHead>
+                        <TableHead className="w-[60px] text-center">#</TableHead>
                         <TableHead className="w-[180px]">ชื่อ-นามสกุล</TableHead>
                         <TableHead className="w-[150px]">วันที่สมัคร</TableHead>
                         <TableHead className="w-[120px]">เบอร์โทร</TableHead>
@@ -313,7 +313,7 @@ export default function ReviewsListPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-slate-50">
-                    <TableHead className="w-[50px] text-center">#</TableHead>
+                    <TableHead className="w-[60px] text-center">#</TableHead>
                     <TableHead className="w-[180px]">ชื่อ-นามสกุล</TableHead>
                     <TableHead className="w-[150px]">โครงการ</TableHead>
                     <TableHead className="w-[150px]">วันที่สมัคร</TableHead>

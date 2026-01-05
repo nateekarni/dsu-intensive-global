@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -23,6 +24,7 @@ interface DocumentItem {
   id: string;
   name: string;
   file: File | null;
+  isRequired: boolean;
 }
 
 export default function CreateProjectPage() {
@@ -53,9 +55,9 @@ export default function CreateProjectPage() {
     "สุขภาพแข็งแรง ไม่มีโรคติดต่อ"
   ]);
   const [documents, setDocuments] = useState<DocumentItem[]>([
-    { id: "1", name: "สำเนาหนังสือเดินทาง (Passport)", file: null },
-    { id: "2", name: "หนังสือยินยอมจากผู้ปกครอง", file: null },
-    { id: "3", name: "ใบแสดงผลการเรียน (Transcript)", file: null }
+    { id: "1", name: "สำเนาหนังสือเดินทาง (Passport)", file: null, isRequired: true },
+    { id: "2", name: "หนังสือยินยอมจากผู้ปกครอง", file: null, isRequired: true },
+    { id: "3", name: "ใบแสดงผลการเรียน (Transcript)", file: null, isRequired: true }
   ]);
 
   // --- 5. ค่าใช้จ่าย ---
@@ -146,7 +148,7 @@ export default function CreateProjectPage() {
   };
 
   const handleAddDocument = () => {
-    const newDoc = { id: Date.now().toString(), name: "", file: null };
+    const newDoc = { id: Date.now().toString(), name: "", file: null, isRequired: true };
     setDocuments([...documents, newDoc]);
   };
 
@@ -248,7 +250,8 @@ export default function CreateProjectPage() {
 
         return {
           name: doc.name,
-          templateUrl: templateUrl // ✅ ส่งค่า null ถ้าไม่มีไฟล์ (Firestore รับได้)
+          templateUrl: templateUrl, // ✅ ส่งค่า null ถ้าไม่มีไฟล์ (Firestore รับได้)
+          isRequired: doc.isRequired
         };
       }));
 
@@ -551,6 +554,20 @@ export default function CreateProjectPage() {
                         </span>
                       </div>
                     </div>
+
+                    <div className="flex items-center gap-2 mr-2">
+                      <Checkbox
+                        id={`req-${doc.id}`}
+                        checked={doc.isRequired}
+                        onCheckedChange={(checked) => {
+                          const newDocs = [...documents];
+                          newDocs[i].isRequired = !!checked;
+                          setDocuments(newDocs);
+                        }}
+                      />
+                      <Label htmlFor={`req-${doc.id}`} className="cursor-pointer text-sm whitespace-nowrap">จำเป็น</Label>
+                    </div>
+
                     <Button type="button" variant="ghost" size="icon" onClick={() => setDocuments(documents.filter((_, idx) => idx !== i))}>
                       <Trash2 className="w-4 h-4 text-red-500" />
                     </Button>

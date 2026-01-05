@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Trash2, X, CheckCircle, ArrowLeft } from "lucide-react";
 import {
   AlertDialog,
@@ -27,6 +28,7 @@ interface DocumentItem {
   file: File | null;
   existingUrl?: string;
   templateUrl?: string;
+  isRequired: boolean;
 }
 
 export default function EditProjectPage() {
@@ -112,7 +114,8 @@ export default function EditProjectPage() {
               id: doc.id || Date.now().toString(),
               name: doc.name,
               file: null,
-              existingUrl: doc.templateUrl
+              existingUrl: doc.templateUrl,
+              isRequired: doc.isRequired !== undefined ? doc.isRequired : true
             })));
           }
 
@@ -172,7 +175,7 @@ export default function EditProjectPage() {
   };
 
   const handleAddDocument = () => {
-    const newDoc = { id: Date.now().toString(), name: "", file: null, existingUrl: undefined };
+    const newDoc = { id: Date.now().toString(), name: "", file: null, existingUrl: undefined, isRequired: true };
     setDocuments([...documents, newDoc]);
   };
 
@@ -257,9 +260,9 @@ export default function EditProjectPage() {
             const docRef = ref(storage, `projects/${projectId}/docs/${d.id}_${Date.now()}`);
             await uploadBytes(docRef, d.file);
             const url = await getDownloadURL(docRef);
-            return { id: d.id, name: d.name, templateUrl: url };
+            return { id: d.id, name: d.name, templateUrl: url, isRequired: d.isRequired };
           } else {
-            return { id: d.id, name: d.name, templateUrl: d.existingUrl || "" };
+            return { id: d.id, name: d.name, templateUrl: d.existingUrl || "", isRequired: d.isRequired };
           }
         })
       );
@@ -549,6 +552,20 @@ export default function EditProjectPage() {
                           </span>
                         </div>
                       </div>
+
+                      <div className="flex items-center gap-2 mr-2">
+                        <Checkbox
+                          id={`req-${doc.id}`}
+                          checked={doc.isRequired}
+                          onCheckedChange={(checked) => {
+                            const newDocs = [...documents];
+                            newDocs[i].isRequired = !!checked;
+                            setDocuments(newDocs);
+                          }}
+                        />
+                        <Label htmlFor={`req-${doc.id}`} className="cursor-pointer text-sm whitespace-nowrap">จำเป็น</Label>
+                      </div>
+
                       <Button type="button" variant="ghost" size="icon" onClick={() => setDocuments(documents.filter((_, idx) => idx !== i))}>
                         <Trash2 className="w-4 h-4 text-red-500" />
                       </Button>
@@ -817,6 +834,6 @@ export default function EditProjectPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </div >
   );
 }

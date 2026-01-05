@@ -54,8 +54,11 @@ export default function StudentListPage() {
       ...d.data(),
       // Flatten ข้อมูลส่วนตัวออกมาให้ใช้ง่าย
       name: `${d.data().personalData.nameThai} ${d.data().personalData.surnameThai}`,
+      studentId: d.data().personalData.studentId || "-",
       phone: d.data().personalData.phone,
-      classroom: d.data().personalData.classroom || "-"
+      classroom: (d.data().personalData.gradeLevel && d.data().personalData.classroom)
+        ? `${d.data().personalData.gradeLevel}/${d.data().personalData.classroom}`
+        : (d.data().personalData.classroom || "-")
     }));
     setStudents(list);
     setLoading(false);
@@ -146,7 +149,8 @@ export default function StudentListPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[90px]"><input type="checkbox" /></TableHead>
+              <TableHead className="w-[60px]"><input type="checkbox" /></TableHead>
+              <TableHead className="w-[100px]">รหัสนักเรียน</TableHead>
               <TableHead>ชื่อ-นามสกุล</TableHead>
               <TableHead>ชั้นเรียน</TableHead>
               <TableHead>เบอร์โทร</TableHead>
@@ -158,7 +162,8 @@ export default function StudentListPage() {
           <TableBody>
             {filteredStudents.map((s) => (
               <TableRow key={s.id}>
-                <TableCell className="w-[90px]"><input type="checkbox" checked={selectedStudents.includes(s.id)} onChange={() => toggleSelect(s.id)} /></TableCell>
+                <TableCell className="w-[60px]"><input type="checkbox" checked={selectedStudents.includes(s.id)} onChange={() => toggleSelect(s.id)} /></TableCell>
+                <TableCell className="w-[100px]">{s.studentId}</TableCell>
                 <TableCell className="font-medium">{s.name}</TableCell>
                 <TableCell>{s.classroom}</TableCell>
                 <TableCell>{s.phone}</TableCell>
