@@ -24,10 +24,10 @@ export default function LoginPage() {
     try {
       const input = identifier.trim();
 
-      // 1. ตรวจสอบรูปแบบ Input เพื่อเตรียม Email สำหรับ Firebase Auth
-      const isEmailInput = input.includes("@") || input.includes(".com") || input.includes(".th") || input.includes(".edu") || input.includes(".su");
-      
       let emailToLogin = input;
+      // 1. ตรวจสอบรูปแบบ Input (Email หรือ Student ID)
+      const isEmailInput = input.includes("@");
+
       if (!isEmailInput) {
         // ถ้าระบุเป็นรหัสนักเรียน -> เติมโดเมนจำลองต่อท้าย
         emailToLogin = `${input}@dsu.student`;
@@ -39,7 +39,7 @@ export default function LoginPage() {
 
       // 3. ดึงข้อมูล Role จาก Firestore เพื่อตัดสินใจ Redirect
       const userDoc = await getDoc(doc(db, "users", uid));
-      
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
         const role = userData.role; // ค่า role ที่เก็บใน DB (admin / student)
@@ -51,7 +51,7 @@ export default function LoginPage() {
           // ถ้าเป็น student หรือ role อื่นๆ ให้ไปหน้า Feed
           router.push("/student/feed");
         }
-        
+
       } else {
         // กรณี Login ผ่าน Auth แต่ไม่มีข้อมูล User ใน DB (Fallback)
         // ให้ไปหน้า Feed เป็นค่าเริ่มต้น
@@ -70,38 +70,40 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <Card className="w-full max-w-md p-8 space-y-6 shadow-lg">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold text-primary">DSU Intensive Global</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+            DSU Intensive Global
+          </h1>
           <p className="text-sm text-slate-500">เข้าสู่ระบบเพื่อดำเนินการต่อ</p>
         </div>
-        
+
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">
               รหัสนักเรียน
             </label>
-            <Input 
-              type="text" 
+            <Input
+              type="text"
               placeholder="กรอกรหัสนักเรียน"
-              value={identifier} 
-              onChange={(e) => setIdentifier(e.target.value.trim())} 
-              required 
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value.trim())}
+              required
             />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">
               วันเดือนปีเกิด (DDMMYY)
             </label>
-            <Input 
-              type="password" 
+            <Input
+              type="password"
               placeholder="เช่น 210345"
-              value={password} 
-              onChange={(e) => setPassword(e.target.value.trim())} 
-              required 
+              value={password}
+              onChange={(e) => setPassword(e.target.value.trim())}
+              required
             />
           </div>
-          
+
           {error && <div className="p-3 bg-red-50 text-red-600 text-xs rounded border border-red-200">{error}</div>}
-          
+
           <Button type="submit" className="w-full btn-primary h-11 text-base" disabled={loading}>
             {loading ? <Loader2 className="animate-spin mr-2" /> : null}
             เข้าสู่ระบบ

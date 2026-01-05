@@ -9,14 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  Plus, 
-  Users, 
-  MoreVertical, 
-  Eye, 
-  Edit, 
-  Trash2, 
-  Lock, 
+import {
+  Plus,
+  Users,
+  MoreVertical,
+  Eye,
+  Edit,
+  Trash2,
+  Lock,
   Unlock,
   Calendar,
   MapPin
@@ -56,6 +56,8 @@ export default function AdminProjectList() {
   const [applicationStats, setApplicationStats] = useState<Record<string, { applied: number; approved: number }>>({});
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [projectToToggle, setProjectToToggle] = useState<any | null>(null);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -102,7 +104,8 @@ export default function AdminProjectList() {
       await fetchProjects();
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
+      setAlertMessage("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
+      setAlertOpen(true);
     }
   };
 
@@ -115,18 +118,18 @@ export default function AdminProjectList() {
 
   const handleDeleteProject = async () => {
     if (!projectToDelete) return;
-    
+
     try {
       // ลบรูปภาพและไฟล์ใน Storage
       try {
         const projectFolderRef = ref(storage, `projects/${projectToDelete.id}`);
         const fileList = await listAll(projectFolderRef);
-        
+
         // ลบไฟล์ทั้งหมดในโฟลเดอร์โครงการ
         await Promise.all(
           fileList.items.map((itemRef) => deleteObject(itemRef))
         );
-        
+
         // ลบไฟล์ใน subfolder (เช่น docs)
         for (const folder of fileList.prefixes) {
           const subFileList = await listAll(folder);
@@ -138,7 +141,7 @@ export default function AdminProjectList() {
         console.warn("Error deleting storage files:", storageError);
         // ถ้าลบไฟล์ไม่ได้ ให้ลบ document ต่อ
       }
-      
+
       // ลบ document จาก Firestore
       await deleteDoc(doc(db, "projects", projectToDelete.id));
       await fetchProjects();
@@ -146,7 +149,8 @@ export default function AdminProjectList() {
       setProjectToDelete(null);
     } catch (error) {
       console.error("Error deleting project:", error);
-      alert("เกิดข้อผิดพลาดในการลบโครงการ");
+      setAlertMessage("เกิดข้อผิดพลาดในการลบโครงการ");
+      setAlertOpen(true);
     }
   };
 
@@ -162,30 +166,30 @@ export default function AdminProjectList() {
 
   const formatDateRange = (startTimestamp: any, endTimestamp: any) => {
     if (!startTimestamp || !endTimestamp) return "-";
-    
+
     const startDate = startTimestamp.toDate();
     const endDate = endTimestamp.toDate();
-    
+
     const startDay = startDate.getDate();
     const endDay = endDate.getDate();
-    
+
     const startMonth = startDate.toLocaleDateString("th-TH", { month: "short" });
     const endMonth = endDate.toLocaleDateString("th-TH", { month: "short" });
-    
+
     // ใช้ getFullYear() แทน เพื่อไม่ให้มีคำว่า พ.ศ.
     const startYear = startDate.getFullYear() + 543; // แปลงเป็นปี พ.ศ.
     const endYear = endDate.getFullYear() + 543;
-    
+
     // ถ้าเดือนและปีเหมือนกัน
     if (startMonth === endMonth && startYear === endYear) {
       return `${startDay}-${endDay} ${startMonth} ${startYear}`;
     }
-    
+
     // ถ้าข้ามเดือนแต่ปีเดียวกัน
     if (startYear === endYear) {
       return `${startDay} ${startMonth} - ${endDay} ${endMonth} ${startYear}`;
     }
-    
+
     // ถ้าข้ามปี
     return `${startDay} ${startMonth} ${startYear} - ${endDay} ${endMonth} ${endYear}`;
   };
@@ -252,14 +256,14 @@ export default function AdminProjectList() {
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50">
-                <TableHead className="w-[50px]">#</TableHead>
-                <TableHead className="min-w-[300px]">ชื่อโครงการ</TableHead>
-                <TableHead className="min-w-[150px]">สถานที่</TableHead>
-                <TableHead className="w-[280px]">วันที่จัด (ไป-กลับ)</TableHead>
-                <TableHead className="w-[150px]">วันปิดรับสมัคร</TableHead>
+                <TableHead className="w-[30px]">#</TableHead>
+                <TableHead className="w-[250px]">ชื่อโครงการ</TableHead>
+                <TableHead className="w-[150px]">สถานที่</TableHead>
+                <TableHead className="w-[200px]">วันที่จัด (ไป-กลับ)</TableHead>
+                <TableHead className="w-[120px]">วันปิดรับสมัคร</TableHead>
                 <TableHead className="w-[100px]">จำนวนรับ</TableHead>
                 <TableHead className="w-[120px] text-center">สถานะ</TableHead>
-                <TableHead className="w-[100px] text-center">การจัดการ</TableHead>
+                <TableHead className="w-[80px] text-center">การจัดการ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -284,8 +288,8 @@ export default function AdminProjectList() {
                     <TableCell>
                       <div className="flex items-start gap-3">
                         {project.coverImage && (
-                          <img 
-                            src={project.coverImage} 
+                          <img
+                            src={project.coverImage}
                             alt={project.title}
                             className="w-16 h-16 object-cover rounded-lg"
                           />
@@ -354,26 +358,26 @@ export default function AdminProjectList() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => router.push(`/student/projects/${project.id}`)}
                           >
                             <Eye className="w-4 h-4 mr-2" />
                             ดูรายละเอียด
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => router.push(`/admin/projects/${project.id}/students`)}
                           >
                             <Users className="w-4 h-4 mr-2" />
                             รายชื่อผู้สมัคร
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => router.push(`/admin/projects/${project.id}/edit`)}
                           >
                             <Edit className="w-4 h-4 mr-2" />
                             แก้ไขข้อมูลโครงการ
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => {
                               setProjectToToggle(project);
                               setStatusDialogOpen(true);
@@ -392,7 +396,7 @@ export default function AdminProjectList() {
                             )}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => {
                               setProjectToDelete(project);
                               setDeleteDialogOpen(true);
@@ -419,13 +423,13 @@ export default function AdminProjectList() {
           <DialogHeader>
             <DialogTitle>ยืนยันการลบโครงการ</DialogTitle>
             <DialogDescription>
-              คุณแน่ใจหรือไม่ที่จะลบโครงการ "{projectToDelete?.title}"? 
+              คุณแน่ใจหรือไม่ที่จะลบโครงการ "{projectToDelete?.title}"?
               การดำเนินการนี้ไม่สามารถย้อนกลับได้
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setDeleteDialogOpen(false);
                 setProjectToDelete(null);
@@ -433,8 +437,8 @@ export default function AdminProjectList() {
             >
               ยกเลิก
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleDeleteProject}
             >
               ลบโครงการ
@@ -468,6 +472,21 @@ export default function AdminProjectList() {
             <AlertDialogAction onClick={handleConfirmToggleStatus}>
               ยืนยัน
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Generic Alert Dialog */}
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>แจ้งเตือน</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setAlertOpen(false)}>ตกลง</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

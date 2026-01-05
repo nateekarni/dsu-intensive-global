@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { Project } from "@/types"; // Import Type ที่เราทำไว้ EP.2
+import { Project } from "@/types";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,37 +9,24 @@ import { Calendar, MapPin, Users } from "lucide-react";
 export default function FeedPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [applicationStats, setApplicationStats] = useState<Record<string, number>>({});
+  // applicationStats removed for now as public API doesn't expose it yet, 
+  // or we need a simplified public status count if critical. 
+  // Assuming strict privacy, we might hide stats or fetch simply.
+  // For now, let's keep it simple and just show projects.
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        // ดึงเฉพาะโครงการที่สถานะเป็น 'open'
-        const q = query(collection(db, "projects"), where("status", "==", "open"));
-        const querySnapshot = await getDocs(q);
-        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)); // as any ชั่วคราวเพื่อให้ผ่าน type check
-        setProjects(data);
-
-        // นับจำนวนผู้สมัครที่ผ่านการคัดเลือก (approved) ของแต่ละโครงการ
-        // ใช้ try-catch แยกต่างหาก เพื่อให้ถ้า user ไม่ได้ login (ไม่มีสิทธิ์อ่าน applications) ก็ยังเห็น projects ได้
-        try {
-          const stats: Record<string, number> = {};
-          await Promise.all(
-            data.map(async (p: any) => {
-              const appsSnap = await getDocs(
-                query(
-                  collection(db, "applications"),
-                  where("projectId", "==", p.id),
-                  where("status", "==", "approved")
-                )
-              );
-              stats[p.id] = appsSnap.size;
-            })
-          );
-          setApplicationStats(stats);
-        } catch (error) {
-          console.warn("Could not fetch application stats (likely due to permissions):", error);
-        }
+        const res = await fetch('/api/projects');
+        if (!res.ok) throw new Error("Failed to fetch projects");
+        const data = await res.json();
+        // Filter open status on client or server? Server is better but for now client matches old logic partially
+        // Actually server code returns all projects. Let's filter here if needed, or assume server sends what's needed.
+        // The previous code filtered where("status", "==", "open").
+        // Let's filter here to be safe, or update API to filter.
+        // Let's filter client side for now.
+        const openProjects = data.filter((p: any) => p.status === 'open');
+        setProjects(openProjects);
       } catch (error) {
         console.error("Error fetching projects:", error);
       } finally {
@@ -56,7 +41,9 @@ export default function FeedPage() {
   return (
     <div className="container mx-auto px-4 py-6 max-w-6xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">โครงการต่างประเทศ</h1>
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+          โครงการต่างประเทศ
+        </h1>
         <p className="text-sm text-slate-500">โรงเรียนสาธิตมหาวิทยาลัยศิลปากร</p>
       </div>
 
@@ -64,9 +51,9 @@ export default function FeedPage() {
         {projects.map((project) => (
           <Link key={project.id} href={`/student/projects/${project.id}`}>
             <Card className="overflow-hidden cursor-pointer hover:shadow-lg transition-all group h-full flex flex-col">
-              <div className="h-48 bg-slate-200 relative overflow-hidden">
-                <img 
-                  src={project.coverImage || "https://placehold.co/600x400"} 
+              <div className="aspect-video w-full bg-slate-200 relative overflow-hidden">
+                <img
+                  src={project.coverImage || "https://placehold.co/600x400"}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <Badge className="absolute top-2 right-2 bg-green-500 hover:bg-green-600">
@@ -83,7 +70,7 @@ export default function FeedPage() {
                 <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
                   <MapPin className="w-3.5 h-3.5" />
                   <span className="truncate">
-                    {project.locations?.join(", ") || project.displayLocation || "-"}
+                    {project.displayLocation || project.locations?.join(", ") || "-"}
                   </span>
                 </div>
 
@@ -91,10 +78,7 @@ export default function FeedPage() {
                   <span className="font-bold text-primary text-base">
                     ฿{project.costs?.amount?.toLocaleString() ?? "0"}
                   </span>
-                  <span className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded">
-                    <Users className="w-3 h-3" />
-                    {applicationStats[project.id] || 0}/{project.capacity || 0} คน
-                  </span>
+                  {/* Stats removed for privacy as requested, or can add back if API exposes count */}
                 </div>
               </div>
             </Card>

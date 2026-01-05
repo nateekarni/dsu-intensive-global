@@ -9,6 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, Loader2, User, FileText, Phone } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { PersonalInfoForm, UserProfile } from "@/types";
 
 export default function StudentDetailPage() {
@@ -17,6 +26,8 @@ export default function StudentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [student, setStudent] = useState<UserProfile | null>(null);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
   const [profile, setProfile] = useState<PersonalInfoForm>({
     prefixThai: '',
     prefixEng: '',
@@ -50,7 +61,7 @@ export default function StudentDetailPage() {
           if (docSnap.exists()) {
             const data = docSnap.data() as UserProfile;
             setStudent(data);
-            
+
             // โหลดข้อมูล profile
             if (data.profile) {
               setProfile({
@@ -92,16 +103,18 @@ export default function StudentDetailPage() {
 
   const handleSave = async () => {
     if (!id || typeof id !== 'string') return;
-    
+
     setSaving(true);
     try {
       await updateDoc(doc(db, "users", id), {
         profile: profile,
       });
-      alert("บันทึกข้อมูลสำเร็จ");
+      setAlertMessage("บันทึกข้อมูลสำเร็จ");
+      setAlertOpen(true);
     } catch (error) {
       console.error("Error updating student:", error);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      setAlertMessage("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      setAlertOpen(true);
     } finally {
       setSaving(false);
     }
@@ -148,7 +161,7 @@ export default function StudentDetailPage() {
             <p className="text-slate-500 mt-1 text-sm md:text-base">แก้ไขและจัดการข้อมูลส่วนตัวของนักเรียน</p>
           </div>
         </div>
-          <Button onClick={handleSave} disabled={saving} className="gap-1 ml-4">
+        <Button onClick={handleSave} disabled={saving} className="gap-1 ml-4">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           บันทึกการแก้ไข
         </Button>
@@ -415,6 +428,19 @@ export default function StudentDetailPage() {
           </Button>
         </div>
       </div>
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>แจ้งเตือน</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setAlertOpen(false)}>ตกลง</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

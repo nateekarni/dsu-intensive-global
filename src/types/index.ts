@@ -19,7 +19,7 @@ export interface UserProfile {
     passportNo: string;
     passportExpiry?: string;
     passportUrl?: string;
-    
+
     // ข้อมูลสุขภาพ
     weight?: number;
     height?: number;
@@ -55,22 +55,22 @@ export interface PersonalInfoForm {
   birthDate: string;
   weight: number;
   height: number;
-  
+
   // เอกสาร
   studentId: string;
   citizenId: string;
   passportNo: string;
-  
+
   // การติดต่อ
   phone: string;
   parentPhone: string;
   email: string;
   lineId: string;
-  
+
   // สุขภาพ
   diseases: string;
   allergies: string;
-  
+
   // การเรียน
   gradeLevel: string;
   classroom: string;
@@ -93,16 +93,17 @@ export interface Project {
   title: string;
   description: string;
   coverImage: string;
+  displayLocation?: string;
   status: 'open' | 'closed' | 'draft';
-  
+
   // ช่วงเวลา
   startDate: Timestamp;
   endDate: Timestamp;
   closeDate: Timestamp;
-  
+
   // สถานที่
   locations: string[];
-  
+
   // รูปแบบการรับสมัคร
   recruitmentType: 'selection' | 'fcfs';
   capacity: number;
@@ -152,12 +153,12 @@ export interface Application {
   id: string;
   projectId: string;
   userId: string;
-  
+
   personalData: any; // Snapshot ข้อมูลตอนสมัคร
   answers: { [key: string]: string }; // คำตอบเพิ่มเติม
 
   status: 'draft' | 'submitted' | 'checking' | 'approved' | 'rejected';
-  
+
   payment: {
     method: 'transfer' | 'cash';
     status: 'pending' | 'verified' | 'failed';

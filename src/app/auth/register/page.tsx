@@ -8,10 +8,21 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
   const router = useRouter();
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -32,15 +43,18 @@ export default function RegisterPage() {
 
       router.push("/student/feed");
     } catch (err: any) {
-      alert("เกิดข้อผิดพลาด: " + err.message);
+      setAlertMessage("เกิดข้อผิดพลาด: " + err.message);
+      setAlertOpen(true);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <Card className="w-full max-w-md p-8 space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-primary">ลงทะเบียน</h1>
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+            ลงทะเบียน
+          </h1>
           <p className="text-sm text-slate-500">สร้างบัญชีสำหรับนักเรียน</p>
         </div>
         <form onSubmit={handleRegister} className="space-y-4">
@@ -58,6 +72,20 @@ export default function RegisterPage() {
           มีบัญชีแล้ว? <Link href="/login" className="text-primary font-bold hover:underline">เข้าสู่ระบบ</Link>
         </div>
       </Card>
+
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>แจ้งเตือน</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setAlertOpen(false)}>ตกลง</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

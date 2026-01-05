@@ -1,12 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   MapPin,
   Calendar,
@@ -15,7 +18,9 @@ import {
   CheckCircle2,
   XCircle,
   FileText,
-  ClipboardList
+  ClipboardList,
+  LogIn,
+  User
 } from "lucide-react";
 
 export default function ProjectDetailPage() {
@@ -24,6 +29,7 @@ export default function ProjectDetailPage() {
   const { user } = useAuth();
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -40,7 +46,11 @@ export default function ProjectDetailPage() {
 
   const handleApply = () => {
     if (typeof id === "string") {
-      router.push(`/student/apply/${id}`);
+      if (user) {
+        router.push(`/student/apply/${id}`);
+      } else {
+        setShowAuthModal(true);
+      }
     }
   };
 
@@ -85,9 +95,9 @@ export default function ProjectDetailPage() {
           onClick={() => router.back()}
           className="absolute left-0"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" /> กลับ
+          <ArrowLeft className="w-4 h-4 mr-2" /> <span className="hidden sm:inline">กลับ</span><span className="sm:hidden">กลับ</span>
         </Button>
-        <h1 className="text-xl md:text-2xl font-bold text-slate-800">
+        <h1 className="text-xl md:text-2xl font-bold text-slate-800 px-16 text-center">
           รายละเอียดโครงการ
         </h1>
       </div>
@@ -252,8 +262,11 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Fixed Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-6 z-10">
-        <div className="flex items-center justify-between gap-4">
+      <div className={cn(
+        "fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-10",
+        user && "lg:pl-64"
+      )}>
+        <div className="container mx-auto max-w-6xl px-4 py-4 flex items-center justify-between gap-4">
           <div>
             <p className="text-xs text-slate-500">ค่าเข้าร่วมโครงการ</p>
             <p className="text-2xl font-bold text-primary">
@@ -273,6 +286,42 @@ export default function ProjectDetailPage() {
           </Button>
         </div>
       </div>
+
+      {/* Auth Modal */}
+      <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
+        <DialogContent className="w-[90%] sm:max-w-md rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">ลงทะเบียนสมัครโครงการ</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-center text-slate-500 text-sm">
+              กรุณาเลือกวิธีการเข้าสู่ระบบเพื่อดำเนินการต่อ
+            </p>
+            <div className="space-y-3">
+              <Link href={`/auth/login?redirect=/student/apply/${id}`} className="block w-full">
+                <Button className="w-full h-11 text-base bg-blue-600 hover:bg-blue-700">
+                  <LogIn className="mr-2 h-5 w-5" />
+                  เข้าสู่ระบบ (มีบัญชีแล้ว)
+                </Button>
+              </Link>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-200" /></div>
+                <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-slate-500">หรือ</span></div>
+              </div>
+              <Link href={`/student/apply/${id}?autoStart=true`} className="block w-full">
+                <Button
+                  variant="outline"
+                  className="w-full h-11 text-base border-slate-300 hover:bg-slate-50"
+                  onClick={() => setShowAuthModal(false)}
+                >
+                  <User className="mr-2 h-5 w-5" />
+                  สมัครใหม่ (ยังไม่มีบัญชี)
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -36,14 +36,14 @@ export function AdminSidebar() {
           DSU Intensive Global
         </Link>
       </div>
-      
+
       {/* Menu Section */}
       <div className="flex flex-col flex-1 overflow-y-auto p-4">
         <nav className="space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname.startsWith(item.href);
-            
+
             return (
               <Link
                 key={item.href}
@@ -62,15 +62,15 @@ export function AdminSidebar() {
           })}
         </nav>
       </div>
-      
+
       {/* User Section */}
       <div className="p-4 border-t">
         <div className="text-sm text-slate-600 mb-2 px-4">
           {user?.email}
         </div>
-        <Button 
-          variant="outline" 
-          className="w-full justify-start" 
+        <Button
+          variant="outline"
+          className="w-full justify-start"
           onClick={logout}
         >
           <LogOut className="w-4 h-4 mr-2" />
@@ -86,11 +86,11 @@ export function AdminBottomNav() {
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-50">
-      <div className="grid grid-cols-2 h-16">
+      <div className="grid grid-cols-3 h-16">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname.startsWith(item.href);
-          
+
           return (
             <Link
               key={item.href}

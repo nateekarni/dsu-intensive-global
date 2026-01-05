@@ -38,12 +38,12 @@ export default function AdminStudentsPage() {
         // ดึง users ที่มี role = student
         const q = query(collection(db, "users"), where("role", "==", "student"));
         const snapshot = await getDocs(q);
-        
+
         const studentsData: StudentDoc[] = snapshot.docs.map((doc) => ({
           ...(doc.data() as StudentDoc),
           id: doc.id,
         }));
-        
+
         setStudents(studentsData);
       } catch (error) {
         console.error("Error fetching students:", error);
@@ -156,12 +156,12 @@ export default function AdminStudentsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50">
-                  <TableHead className="min-w-[140px]">รหัสนักเรียน</TableHead>
-                  <TableHead className="min-w-[260px]">ชื่อ-นามสกุล</TableHead>
-                  <TableHead className="min-w-[140px]">ชั้นเรียน</TableHead>
-                  <TableHead>อีเมล</TableHead>
-                  <TableHead>เบอร์โทร</TableHead>
-                  <TableHead className="w-[100px] text-center">จัดการ</TableHead>
+                  <TableHead className="w-[120px]">รหัสนักเรียน</TableHead>
+                  <TableHead className="w-[250px]">ชื่อ-นามสกุล</TableHead>
+                  <TableHead className="w-[100px]">ชั้นเรียน</TableHead>
+                  <TableHead className="w-[200px]">อีเมล</TableHead>
+                  <TableHead className="w-[120px]">เบอร์โทร</TableHead>
+                  <TableHead className="w-[80px] text-center">จัดการ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -228,11 +228,11 @@ export default function AdminStudentsPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-white">
-                        <TableHead className="min-w-[140px]">รหัสนักเรียน</TableHead>
-                        <TableHead className="min-w-[260px]">ชื่อ-นามสกุล</TableHead>
-                        <TableHead>อีเมล</TableHead>
-                        <TableHead>เบอร์โทร</TableHead>
-                        <TableHead className="w-[100px] text-center">จัดการ</TableHead>
+                        <TableHead className="w-[120px]">รหัสนักเรียน</TableHead>
+                        <TableHead className="w-[250px]">ชื่อ-นามสกุล</TableHead>
+                        <TableHead className="w-[200px]">อีเมล</TableHead>
+                        <TableHead className="w-[120px]">เบอร์โทร</TableHead>
+                        <TableHead className="w-[80px] text-center">จัดการ</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
