@@ -48,7 +48,7 @@ export function AuthForm() {
       }
 
       // 2. Proceed with login/register
-      // TODO: Replace with real Supabase/Better Auth
+      // TODO: Replace with real Better Auth logic
       localStorage.setItem('dsu_mock_auth', 'true')
       window.dispatchEvent(new Event('mock-auth-changed'))
 

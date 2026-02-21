@@ -48,7 +48,7 @@ export function ProjectTable({ initialData, isLoading, error }: ProjectTableProp
 
   const handleArchive = (id: string) => {
     setData((prev) => prev.map((proj) => (proj.id === id ? { ...proj, status: 'archived' } : proj)))
-    toast.success('Project archived successfully.') // Will be replaced by actual Supabase/API call later
+    toast.success('Project archived successfully.') // Will be replaced by actual API call later
   }
 
   const confirmDelete = () => {

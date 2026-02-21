@@ -41,7 +41,7 @@ import { Badge } from '@/components/ui/badge'
 import { mockPrograms } from '@/data/mockPrograms'
 import { Navbar } from '@/components/programs/Navbar'
 
-// ─── Mock data (will come from Supabase) ──────────────────────────────────────
+// ─── Mock data (will come from API/Backend) ──────────────────────────────────────
 const mockStudentProfile = {
   prefixTh: 'นาย',
   firstNameTh: 'ณัฐวงศ์',

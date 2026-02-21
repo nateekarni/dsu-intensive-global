@@ -42,7 +42,7 @@ export async function submitContactForm(
   // const { name, email, subject, message } = validatedFields.data
 
   try {
-    // Mocking an ongoing process without Supabase
+    // Mocking an ongoing process
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     return {
