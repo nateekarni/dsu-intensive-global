@@ -120,6 +120,7 @@ export interface DsuUserAuthOperations {
  */
 export interface DsuUser {
   id: number;
+  role: 'admin' | 'student';
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -237,6 +238,7 @@ export interface PayloadMigration {
  * via the `definition` "dsu-users_select".
  */
 export interface DsuUsersSelect<T extends boolean = true> {
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

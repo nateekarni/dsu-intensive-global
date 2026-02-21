@@ -1,4 +1,4 @@
-import { postgresAdapter } from '@payloadcms/db-postgres'
+import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { buildConfig } from 'payload'
@@ -27,11 +27,11 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: postgresAdapter({
-    pool: {
-      connectionString: process.env.DATABASE_URL || '',
+  db: sqliteAdapter({
+    client: {
+      url: process.env.DATABASE_URL || 'file:./payload.db',
+      authToken: process.env.DATABASE_AUTH_TOKEN, // Optional for local SQLite, required for Turso/remote D1
     },
-    schemaName: 'dsu', // Use 'dsu' schema for table separation
   }),
   sharp,
   plugins: [],

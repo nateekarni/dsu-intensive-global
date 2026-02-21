@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
+    "create:admin": "cross-env NODE_OPTIONS=--no-deprecation node --env-file=.env --import tsx scripts/create-admin.ts",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "devsafe": "rm -rf .next && cross-env NODE_OPTIONS=--no-deprecation next dev",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
@@ -20,8 +21,9 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.993.0",
     "@hookform/resolvers": "^5.2.2",
+    "@libsql/client": "^0.17.0",
     "@marsidev/react-turnstile": "^1.4.2",
-    "@payloadcms/db-postgres": "3.77.0",
+    "@payloadcms/db-sqlite": "^3.77.0",
     "@payloadcms/next": "3.77.0",
     "@payloadcms/richtext-lexical": "3.77.0",
     "@payloadcms/storage-s3": "^3.77.0",

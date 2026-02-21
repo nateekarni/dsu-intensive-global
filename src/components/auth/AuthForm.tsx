@@ -48,13 +48,58 @@ export function AuthForm() {
       }
 
       // 2. Proceed with login/register
-      // TODO: Replace with real Better Auth logic
-      localStorage.setItem('dsu_mock_auth', 'true')
-      window.dispatchEvent(new Event('mock-auth-changed'))
+      const form = e.currentTarget as HTMLFormElement
 
-      const callbackUrl = searchParams.get('callbackUrl') || '/programs'
-      alert(authMode === 'login' ? 'ล็อกอินสำเร็จ (Mock)' : 'ลงทะเบียนสำเร็จ (Mock)')
-      router.push(callbackUrl)
+      if (authMode === 'login') {
+        // Login Flow
+        const res = await fetch('/api/dsu-users/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: form.email.value, password: form.password.value }),
+        })
+        const data = await res.json()
+
+        if (!res.ok) {
+          throw new Error(data.errors?.[0]?.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง')
+        }
+
+        // Check Role & Redirect
+        if (data.user?.role === 'admin') {
+          router.push('/payload-admin')
+        } else {
+          const callbackUrl = searchParams.get('callbackUrl') || '/student/profile' // Default to student profile
+          router.push(callbackUrl)
+        }
+      } else {
+        // Register Flow
+        const res = await fetch('/api/dsu-users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+             email: form.email.value, 
+             password: form.password.value,
+             // firstName and lastName would be saved to user profile if we add those fields later
+             firstName: form.firstName.value,
+             lastName: form.lastName.value,
+          }),
+        })
+        
+        const data = await res.json()
+
+        if (!res.ok) {
+           throw new Error(data.errors?.[0]?.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก')
+        }
+        
+        // Auto-login after registration
+        await fetch('/api/dsu-users/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: form.email.value, password: form.password.value }),
+        })
+        
+        const callbackUrl = searchParams.get('callbackUrl') || '/student/profile'
+        router.push(callbackUrl)
+      }
     } catch (error) {
       console.error(error)
       const err = error as Error
