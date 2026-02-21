@@ -48,3 +48,18 @@ node_modules/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Non-deployment & Local Development files
+*.md
+*.sh
+scripts/
+.agents/
+.cursor/
+.vscode/
+
+# Testing
+tests/
+vitest.config.mts
+vitest.setup.ts
+playwright.config.ts
+test.env

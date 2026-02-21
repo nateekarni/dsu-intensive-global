@@ -5,20 +5,23 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
-import { Users } from './collections/Users'
-import { Media } from './collections/Media'
+import { DSU_Users } from './collections/DSU_Users'
+import { DSU_Media } from './collections/DSU_Media'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
   admin: {
-    user: Users.slug,
+    user: DSU_Users.slug,
     importMap: {
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media],
+  routes: {
+    admin: '/payload-admin',
+  },
+  collections: [DSU_Users, DSU_Media],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -28,6 +31,7 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },
+    schemaName: 'dsu', // Use 'dsu' schema for table separation
   }),
   sharp,
   plugins: [],
